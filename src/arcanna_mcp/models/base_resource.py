@@ -88,7 +88,7 @@ class ResourceCommon(BaseModel):
 
 
 class ApiKeyResource(ResourceCommon):
-    type: Literal[ResourceType.INPUT_API_KEY] = ResourceType.INPUT_API_KEY.value
+    type: Literal[ResourceType.API_KEY] = ResourceType.API_KEY.value
     properties: ApiKeyProperties
 
 
