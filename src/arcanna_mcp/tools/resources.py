@@ -1,5 +1,5 @@
 from typing import Callable, Dict, List, Optional
-from arcanna_mcp.environment import GLOBAL_API_KEY
+from arcanna_mcp.environment import MANAGEMENT_API_KEY
 from arcanna_mcp.constants import RESOURCES_CRUD_URL
 from arcanna_mcp.models.base_resource import BaseResource
 from arcanna_mcp.models.resource_type import ResourceType
@@ -33,7 +33,7 @@ async def integration_parameters_schema(integration_type: Optional[str] = None, 
     from arcanna_mcp.constants import INTEGRATION_PARAMETERS_SCHEMA_URL
 
     headers = {
-        "x-arcanna-api-key": GLOBAL_API_KEY,
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
 
@@ -362,7 +362,7 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
         }
 
         headers = {
-            "x-arcanna-api-key": GLOBAL_API_KEY,
+            "x-arcanna-api-key": MANAGEMENT_API_KEY,
             "Content-Type": "application/json"
         }
 
@@ -394,7 +394,7 @@ async def get_resources(
             The arcanna internal id of the searched resource (mutually exclusive with title)
     """
     headers = {
-        "x-arcanna-api-key": GLOBAL_API_KEY,
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
 
@@ -429,7 +429,7 @@ async def delete_resources(
             The arcanna internal id the resource that will be deleted (mutually exclusive with title)
     """
     headers = {
-        "x-arcanna-api-key": GLOBAL_API_KEY,
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
 

@@ -1,6 +1,6 @@
 import requests
 from typing import Optional, List, Callable
-from arcanna_mcp.environment import GLOBAL_API_KEY
+from arcanna_mcp.environment import MANAGEMENT_API_KEY
 from arcanna_mcp.utils.exceptions_handler import handle_exceptions
 
 
@@ -90,7 +90,7 @@ async def execute_code(source_code: str, job_id: Optional[int], input_test: dict
         body["settings"] = settings
 
     headers = {
-        "x-arcanna-api-key": GLOBAL_API_KEY,
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
     response = requests.post(CUSTOM_CODE_BLOCK_TEST_URL, json=body, headers=headers)
@@ -161,7 +161,7 @@ async def save_code(title: str, description: str, source_code: str, job_id: Opti
         body["settings"] = settings
 
     headers = {
-        "x-arcanna-api-key": GLOBAL_API_KEY,
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
     response = requests.post(CUSTOM_CODE_BLOCK_SAVE_URL, json=body, headers=headers)
