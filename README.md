@@ -19,7 +19,7 @@ Desktop).
     "arcanna": {
       "command": "uvx",
       "args": [
-        "run",
+        "--from git+https://github.com/siscale/arcanna-mcp-server@master",
         "arcanna-mcp"
       ],
       "env": {
