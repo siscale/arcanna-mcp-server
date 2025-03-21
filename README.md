@@ -32,3 +32,41 @@ Desktop).
   }
 }
 ```
+
+### Option 2 - Building local image from this repository
+#### Prerequisites
+- Docker - https://docs.docker.com/engine/install/
+
+#### Configuration
+1. Change directory to the directory where the Dockerfile is.
+2. Run ```docker build -t mcp/arcanna . --progress=plain --no-cache```
+3. Add the configuration bellow to your claude desktop config.
+```json
+{
+  "mcpServers": {
+    "arcanna-mcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "ARCANNA_INPUT_API_KEY",
+        "-e",
+        "ARCANNA_MANAGEMENT_API_KEY",
+        "-e",
+        "ARCANNA_HOST",
+        "-e",
+        "ARCANNA_USER",
+        "mcp/arcanna"
+      ],
+      "env": {
+        "ARCANNA_INPUT_API_KEY": "<YOUR_ARCANNA_API_KEY_HERE>",
+        "ARCANNA_MANAGEMENT_API_KEY": "<ARCANNA_MANAGEMENT_API_KEY>",
+        "ARCANNA_HOST": "<YOUR_ARCANNA_HOST_HERE>",
+        "ARCANNA_USER": "<YOUR_USERNAME_HERE>"
+      }
+    }
+  }
+}
+```
