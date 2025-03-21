@@ -1,7 +1,6 @@
 # Arcanna MCP Server
 
-The Arcanna MCP Server is a specialized server application designed to interface with Claude via the MCP (Model Control Protocol)
-framework. This server provides a seamless way to execute tools and commands within the Claude client environment.
+The Arcanna MCP server allows user to interact with Arcanna's AI use cases through the Model Context Protocol (MCP).
 
 ## Usage with Claude Desktop or other MCP Clients
 
@@ -70,3 +69,59 @@ Desktop).
   }
 }
 ```
+
+
+## Features
+
+- **Job Management**: Create, retrieve, start, stop, and train jobs
+- **Event Processing**: Send events for AI-powered decision making
+- **Feedback System**: Provide feedback on decisions to improve model accuracy
+- **Health Monitoring**: Check server and API key status
+
+## Tools
+
+### Job Management
+- **get_jobs**
+  - Retrieve all jobs associated with your API key
+  - Returns a list of job details including status, labels, and processing metrics
+
+- **get_job_by_id**
+  - Retrieve specific job details by ID
+
+- **get_job_by_name**
+  - Retrieve specific job details by name
+
+- **get_job_labels**
+  - Retrieve decision labels for a specific job
+
+- **get_labels_of_job_by_name**
+  - Retrieve decision labels for a job by name
+
+- **start_job**
+  - Begin event ingestion for a job
+
+- **stop_job**
+  - Stop event ingestion for a job
+
+- **train_job**
+  - Train the job's AI model using the provided feedback
+
+### Event Management
+- **send_event**
+  - Submit an event to Arcanna for AI decision-making
+
+- **send_event_with_id**
+  - Submit an event with a custom identifier
+
+- **get_event_by_id**
+  - Retrieve event details and decision results
+
+### Feedback System
+- **send_feedback_for_event**
+  - Provide feedback on AI decisions for model improvement
+
+### System Health
+- **health_check**
+  - Verify server status and API key validity
+  - Returns API key authorization status
+
