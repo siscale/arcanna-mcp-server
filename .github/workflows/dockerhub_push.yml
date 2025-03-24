@@ -46,7 +46,7 @@ jobs:
 
     - name: Install dependencies from pyproject.toml
       run: |
-        uv pip install . 
+        uv pip install  --system . 
 
     - name: Build package
       run: uv build
