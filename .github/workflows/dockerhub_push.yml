@@ -49,7 +49,7 @@ jobs:
         pip install .
 
     - name: Build package
-      run: uvx arcanna-mcp
+      run: uvx arcanna-mcp-server
 
     - name: Verify package
       run: |
