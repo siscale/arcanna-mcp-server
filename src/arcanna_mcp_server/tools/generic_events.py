@@ -1,9 +1,9 @@
 import requests
 from typing import List, Callable
-from arcanna_mcp.environment import MANAGEMENT_API_KEY
-from arcanna_mcp.utils.exceptions_handler import handle_exceptions
-from arcanna_mcp.models.generic_events import QueryEventsRequest
-from arcanna_mcp.models.generic_events import EventModel
+from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
+from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.models.generic_events import QueryEventsRequest
+from arcanna_mcp_server.models.generic_events import EventModel
 
 
 def export_tools() -> List[Callable]:
@@ -14,7 +14,7 @@ def export_tools() -> List[Callable]:
 
 @handle_exceptions
 async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
-    from arcanna_mcp.constants import QUERY_EVENTS_URL
+    from arcanna_mcp_server.constants import QUERY_EVENTS_URL
 
     f"""
     Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria.

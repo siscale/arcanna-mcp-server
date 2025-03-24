@@ -46,10 +46,10 @@ jobs:
 
     - name: Install dependencies from pyproject.toml
       run: |
-        pip install .
+        uv pip install . "
 
     - name: Build package
-      run: uvx arcanna-mcp-server
+      run: uv build
 
     - name: Verify package
       run: |

@@ -1,7 +1,7 @@
 import requests
 from typing import Optional, List, Callable
-from arcanna_mcp.environment import MANAGEMENT_API_KEY
-from arcanna_mcp.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
+from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 
 
 def export_tools() -> List[Callable]:
@@ -38,7 +38,7 @@ async def generate_code_agent(user_query: str) -> str:
 
 @handle_exceptions
 async def execute_code(source_code: str, job_id: Optional[int], input_test: dict, env_variables: Optional[list], settings: Optional[dict]) -> dict:
-    from arcanna_mcp.constants import CUSTOM_CODE_BLOCK_TEST_URL, CUSTOM_CODE_BLOCK_SAVE_URL
+    from arcanna_mcp_server.constants import CUSTOM_CODE_BLOCK_TEST_URL, CUSTOM_CODE_BLOCK_SAVE_URL
 
     f"""
     Send Python function to be executed on Arcanna.
@@ -101,7 +101,7 @@ async def execute_code(source_code: str, job_id: Optional[int], input_test: dict
 async def save_code(title: str, description: str, source_code: str, job_id: Optional[int],
                     reprocess_event_id: Optional[str], input_test: dict,
                     env_variables: Optional[list], settings: Optional[dict]) -> dict:
-    from arcanna_mcp.constants import CUSTOM_CODE_BLOCK_TEST_URL, CUSTOM_CODE_BLOCK_SAVE_URL
+    from arcanna_mcp_server.constants import CUSTOM_CODE_BLOCK_TEST_URL, CUSTOM_CODE_BLOCK_SAVE_URL
 
     """
     Code block integration save request. It adds a new code block integration to specified job_id.

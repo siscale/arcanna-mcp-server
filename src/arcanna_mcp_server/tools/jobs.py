@@ -1,10 +1,10 @@
 from typing import Callable, List
 
-from arcanna_mcp.constants import GET_JOB_BY_ID_URL, GET_JOBS_URL, GET_JOB_LABELS_URL, START_JOB_URL, STOP_JOB_URL, \
+from arcanna_mcp_server.constants import GET_JOB_BY_ID_URL, GET_JOBS_URL, GET_JOB_LABELS_URL, START_JOB_URL, STOP_JOB_URL, \
     TRAIN_JOB_URL, GET_JOB_BY_NAME_URL, GET_LABELS_OF_JOB_BY_NAME_URL
-from arcanna_mcp.environment import API_KEY, ARCANNA_USER
+from arcanna_mcp_server.environment import API_KEY, ARCANNA_USER
 import requests
-from arcanna_mcp.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 
 
 def export_tools() -> List[Callable]:

@@ -2,9 +2,9 @@ from typing import Callable, List
 
 import requests
 
-from arcanna_mcp.constants import SEND_EVENT_URL, SEND_EVENT_WITH_ID_URL, EVENT_FEEDBACK_URL, RETRIEVE_EVENT_BY_ID_URL
-from arcanna_mcp.environment import API_KEY, ARCANNA_USER
-from arcanna_mcp.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.constants import SEND_EVENT_URL, SEND_EVENT_WITH_ID_URL, EVENT_FEEDBACK_URL, RETRIEVE_EVENT_BY_ID_URL
+from arcanna_mcp_server.environment import API_KEY, ARCANNA_USER
+from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 
 
 def export_tools() -> List[Callable]:
