@@ -4,6 +4,8 @@ import arcanna_mcp.tools.jobs
 import arcanna_mcp.tools.events
 import arcanna_mcp.tools.health_check
 import arcanna_mcp.tools.custom_code_block
+import arcanna_mcp.tools.generic_events
+
 
 def attach_tools(mcp_server: FastMCP):
     modules = [
@@ -11,7 +13,8 @@ def attach_tools(mcp_server: FastMCP):
         arcanna_mcp.tools.events,
         arcanna_mcp.tools.health_check,
         arcanna_mcp.tools.custom_code_block,
-        arcanna_mcp.tools.resources
+        arcanna_mcp.tools.resources,
+        arcanna_mcp.tools.generic_events
     ]
     for module in modules:
         for tool_fn in module.export_tools():
