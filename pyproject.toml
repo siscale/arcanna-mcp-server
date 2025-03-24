@@ -1,6 +1,9 @@
 [project]
-name = "arcanna-mcp"
-version = "0.1.0"
+name = "arcanna-mcp-server"
+authors = [
+  { name="DevSiscale", email="dev@siscale.com" },
+]
+version = "0.1.2"
 description = "The Arcanna MCP server allows user to interact with Arcanna's AI use cases through the Model Context Protocol (MCP)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,7 +25,7 @@ build-backend = "hatchling.build"
 dev-dependencies = ["pyright>=1.1.389"]
 
 [project.scripts]
-arcanna-mcp = "arcanna_mcp:main"
+arcanna-mcp-server = "arcanna_mcp_server:main"
 
 [project.urls]
 homepage = "https://github.com/siscale/arcanna-mcp-server"

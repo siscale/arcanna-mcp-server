@@ -2,7 +2,7 @@
 from pydantic import BaseModel, Field, computed_field
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
-from arcanna_mcp.models.resource_type import ResourceType
+from arcanna_mcp_server.models.resource_type import ResourceType
 
 
 class ApiKeyProperties(BaseModel):

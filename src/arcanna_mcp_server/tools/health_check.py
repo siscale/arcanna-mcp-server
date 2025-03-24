@@ -2,9 +2,9 @@ from typing import Callable, List
 
 import requests
 
-from arcanna_mcp.environment import API_KEY
-from arcanna_mcp.constants import HEALTH_CHECK_URL
-from arcanna_mcp.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.environment import API_KEY
+from arcanna_mcp_server.constants import HEALTH_CHECK_URL
+from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 
 
 def export_tools() -> List[Callable]:
