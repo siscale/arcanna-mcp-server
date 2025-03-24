@@ -18,7 +18,7 @@ Desktop).
     "arcanna": {
       "command": "uvx",
       "args": [
-        "arcanna-mcp"
+        "arcanna-mcp-server"
       ],
       "env": {
         "ARCANNA_INPUT_API_KEY": "YOUR_ARCANNA_INPUT_API_KEY",
