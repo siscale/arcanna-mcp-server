@@ -39,8 +39,7 @@ async def generate_code_agent(user_query: str) -> str:
 @handle_exceptions
 async def execute_code(source_code: str, job_id: Optional[int], input_test: dict, env_variables: Optional[list], settings: Optional[dict]) -> dict:
     from arcanna_mcp.constants import CUSTOM_CODE_BLOCK_TEST_URL, CUSTOM_CODE_BLOCK_SAVE_URL
-
-    f"""
+    """
     Send Python function to be executed on Arcanna.
     The function body must follow the template: def transform(input_record):     # body of the function\n    return input_record
     Ask the user before executing this tool for approval, providing the request details.

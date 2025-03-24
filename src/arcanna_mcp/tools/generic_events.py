@@ -2,21 +2,59 @@ import requests
 from typing import List, Callable
 from arcanna_mcp.environment import MANAGEMENT_API_KEY
 from arcanna_mcp.utils.exceptions_handler import handle_exceptions
-from arcanna_mcp.models.generic_events import QueryEventsRequest
-from arcanna_mcp.models.generic_events import EventModel
+from arcanna_mcp.models.generic_events import QueryEventsRequest, EventModel
+from arcanna_mcp.models.filters import FilterFieldsRequest, FilterFieldsObject
 
 
 def export_tools() -> List[Callable]:
     return [
-        query_arcanna_events
+        query_arcanna_events,
+        get_filter_fields
      ]
 
+
+@handle_exceptions
+async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsObject]:
+    from arcanna_mcp.constants import FILTER_FIELDS_URL
+    f"""
+    Used to get available fields with available operators and the jobs where the fields are available.
+    To be used when Arcanna events filtering is required.
+
+    Parameters:
+    -----------
+    job_ids : int or list of int or None
+        Job IDs to filter on.
+    job_titles : str or list of str or None
+        Job titles to filter on.
+    Returns:
+    --------
+    list of dictionary
+    A dictionary containing job details with the following keys:
+        - field_name (str): The field name.
+        - available_operators (list of str): A list of available operators for the specified field.
+        - available_in_jobs (list of int): A list of jobs where the field is available.
+    """
+    body = {}
+
+    if request.job_ids:
+        body["job_ids"] = request.job_ids
+
+    if request.job_titles:
+        body["job_titles"] = request.job_titles
+
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content-Type": "application/json"
+    }
+    response = requests.post(FILTER_FIELDS_URL, json=body, headers=headers)
+    return response.json()
 
 @handle_exceptions
 async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     from arcanna_mcp.constants import QUERY_EVENTS_URL
 
-    f"""
+    """
+    Before executing this tool, execute get_filter_fields to get available fields to filter on.
     Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria.
     If neither job_ids nor job_titles are provided, the search will include events across all jobs.
 
@@ -29,19 +67,25 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     event_ids : str or list of str or None
         Events IDs to filter on.
     decision_points_only : bool or None
-        If set to 'true', include only decision points in response and not the entire event.
+         If set to true, only decision points will be included in the response, excluding the full event.
     start_date : str or None
         Start date to filter events newer than this date.
         Date format:
           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-          - Elasticsearch format pattern letters: 'now' for now, 'y' for year, 'M' for month, 'd' for day, 'h' for hour, 'm' for minute, 's' for second.
-        Examples: 'now-1d' for last day, 'now-1h' for last hour, 'now-30m' for latest 30 minutes.
+          - Elasticsearch time expressions (e.g., 'now-1d', 'now-2h',  'now-30m')
+            Examples:
+              - 'now-1d' for the last day
+              - 'now-2h' for the last two hours
+              - 'now-30m' for the last 30 minutes
     end_date : str or None
         End date to filter events older than this date.
         Date format:
           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-          - Elasticsearch format pattern letters: 'now' for now, 'y' for year, 'M' for month, 'd' for day, 'h' for hour, 'm' for minute, 's' for second.
-        Examples: 'now-1d' for last day, 'now-1h' for last hour, 'now-30m' for latest 30 minutes.
+          - Elasticsearch time expressions (e.g., 'now-1d', 'now-2h',  'now-30m')
+            Examples:
+              - 'now-1d' for the last day
+              - 'now-2h' for the last two hours
+              - 'now-30m' for the last 30 minutes
     size : int or None
         Number of events to include in response for each job.
     sort_by_column : str or None
