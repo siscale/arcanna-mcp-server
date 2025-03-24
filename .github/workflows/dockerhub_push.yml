@@ -17,7 +17,7 @@ jobs:
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
           approvers: marian-craciunescu
-          minimum-approvals: 1  # Number of approvals required
+          minimum-approvals: 1
           issue-title: "Approval needed for Docker image push"
           issue-body: "Please approve this workflow to push a new Docker image to DockerHub"
           exclude-workflow-initiator-as-approver: false
@@ -45,7 +45,3 @@ jobs:
           context: .
           push: true
           tags: arcanna/arcanna-mcp-server:latest
-          # Optional: Add additional tags if needed
-          # tags: |
-          #   arcanna/arcanna-mcp-server:latest
-          #   arcanna/arcanna-mcp-server:${{ github.sha }}
