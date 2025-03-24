@@ -23,8 +23,9 @@ jobs:
           exclude-workflow-initiator-as-approver: false
           timeout-minutes: 120
 
-  deploy:
+  build-pypi-package:
     runs-on: ubuntu-latest
+    needs: request-approval  # This ensures the approval job completes first
     environment: pypi-publish
     permissions:
       contents: read
@@ -59,7 +60,7 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
 
   # Second job to build and push Docker image
-  build-and-push:
+  docker-build-and-push:
     needs: request-approval  # This ensures the approval job completes first
     runs-on: ubuntu-latest
     steps:
