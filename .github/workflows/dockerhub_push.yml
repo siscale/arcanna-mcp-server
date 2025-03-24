@@ -16,11 +16,12 @@ jobs:
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: marian-craciunescu
+          approvers: DenisStefanAndrei,alinmanolache,AlexCornigeanu,marian-craciunescu,marius-avram,mateibm,AndreiTudose95,smmihai,RazvanKokovicsSiscale,hutanmihai,aburnaz
           minimum-approvals: 1
           issue-title: "Approval needed for Docker image push"
           issue-body: "Please approve this workflow to push a new Docker image to DockerHub"
           exclude-workflow-initiator-as-approver: false
+          timeout-minutes: 120
 
   # Second job to build and push Docker image
   build-and-push:
