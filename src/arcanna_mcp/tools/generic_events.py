@@ -19,7 +19,8 @@ def export_tools() -> List[Callable]:
 async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsObject]:
     """
     Used to get available fields with available operators and the jobs where the fields are available.
-    To be used when Arcanna events filtering is required.
+    If neither job_ids nor job_titles are provided, the search will include fields across all jobs.
+    To be used within query_arcanna_events tool to get a list of available fields to filter on.
 
     Parameters:
     -----------
@@ -50,12 +51,14 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
     response = requests.post(FILTER_FIELDS_URL, json=body, headers=headers)
     return response.json()
 
+
 @handle_exceptions
 async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     """
-    Before executing this tool, execute get_filter_fields to get available fields to filter on.
     Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria.
     If neither job_ids nor job_titles are provided, the search will include events across all jobs.
+    Use get_filter_fields tool before to get available fields to apply 'filters' on.
+    In case of an internal server error, show the error to the user and do not use any other tool, ask the user how he would like to continue.
 
     Parameters:
     -----------
@@ -90,9 +93,9 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     page : int or None (default: 0)
         Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
     sort_by_column : str or None
-        The field to sort events by. Defaults to 'timestamp_inference' field.
+        The field used to sort events. Defaults to the 'timestamp_inference' field; use the default field unless the user specifies a different one.
     sort_order : str or None
-        The order in which to sort events by. Defaults to 'desc' order.
+        The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
     filters : list of dict or None
       Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
       Each filter in list is a dictionary with keys: "field", "operator" and "value"
