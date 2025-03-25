@@ -1,11 +1,11 @@
 import requests
 from typing import List, Callable
-from arcanna_mcp.environment import MANAGEMENT_API_KEY
-from arcanna_mcp.utils.exceptions_handler import handle_exceptions
-from arcanna_mcp.models.generic_events import QueryEventsRequest, EventModel
-from arcanna_mcp.models.filters import FilterFieldsRequest, FilterFieldsObject
-from arcanna_mcp.constants import QUERY_EVENTS_URL
-from arcanna_mcp.constants import FILTER_FIELDS_URL
+from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
+from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.models.generic_events import QueryEventsRequest, EventModel
+from arcanna_mcp_server.models.filters import FilterFieldsRequest, FilterFieldsObject
+from arcanna_mcp_server.constants import QUERY_EVENTS_URL
+from arcanna_mcp_server.constants import FILTER_FIELDS_URL
 
 
 def export_tools() -> List[Callable]:

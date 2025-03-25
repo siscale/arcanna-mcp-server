@@ -1,6 +1,6 @@
 import functools
 
-from arcanna_mcp.utils.tool_exception_response import ToolExceptionResponse
+from arcanna_mcp_server.utils.tool_exception_response import ToolExceptionResponse
 
 
 def handle_exceptions(func):

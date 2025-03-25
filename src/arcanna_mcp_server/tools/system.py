@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Callable, List
-from arcanna_mcp.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 
 
 def export_tools() -> List[Callable]:

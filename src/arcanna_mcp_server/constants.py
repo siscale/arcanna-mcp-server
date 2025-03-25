@@ -1,4 +1,4 @@
-from arcanna_mcp.environment import ARCANNA_HOST
+from arcanna_mcp_server.environment import ARCANNA_HOST
 
 # event ingestion
 SEND_EVENT_URL = ARCANNA_HOST + "/api/v1/events"

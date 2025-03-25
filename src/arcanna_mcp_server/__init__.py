@@ -1,4 +1,4 @@
-from arcanna_mcp.environment import validate_environment_variables
+from arcanna_mcp_server.environment import validate_environment_variables
 from . import server
 
 

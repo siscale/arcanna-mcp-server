@@ -1,8 +1,8 @@
 import requests
 from typing import Optional, List, Callable
-from arcanna_mcp.environment import MANAGEMENT_API_KEY
-from arcanna_mcp.utils.exceptions_handler import handle_exceptions
-from arcanna_mcp.constants import CUSTOM_CODE_BLOCK_TEST_URL, CUSTOM_CODE_BLOCK_SAVE_URL
+from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
+from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.constants import CUSTOM_CODE_BLOCK_TEST_URL, CUSTOM_CODE_BLOCK_SAVE_URL
 
 
 def export_tools() -> List[Callable]:
