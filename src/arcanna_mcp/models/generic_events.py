@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class Filter(BaseModel):
     field: str
     operator: Literal["is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"]
-    value: Any
+    value: Optional[Any] = None
 
 
 class QueryEventsRequest(BaseModel):
@@ -16,6 +16,7 @@ class QueryEventsRequest(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     size: Optional[int] = Field(default=5)
+    page: Optional[int] = Field(default=0)
     sort_by_column: Optional[str] = Field(default="timestamp_inference")
     sort_order: Literal['desc', 'asc'] = Field(default="desc")
     filters: List[Filter] = Field(default_factory=list)

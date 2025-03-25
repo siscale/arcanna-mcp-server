@@ -4,6 +4,8 @@ from arcanna_mcp.environment import MANAGEMENT_API_KEY
 from arcanna_mcp.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp.models.generic_events import QueryEventsRequest, EventModel
 from arcanna_mcp.models.filters import FilterFieldsRequest, FilterFieldsObject
+from arcanna_mcp.constants import QUERY_EVENTS_URL
+from arcanna_mcp.constants import FILTER_FIELDS_URL
 
 
 def export_tools() -> List[Callable]:
@@ -15,8 +17,7 @@ def export_tools() -> List[Callable]:
 
 @handle_exceptions
 async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsObject]:
-    from arcanna_mcp.constants import FILTER_FIELDS_URL
-    f"""
+    """
     Used to get available fields with available operators and the jobs where the fields are available.
     To be used when Arcanna events filtering is required.
 
@@ -51,8 +52,6 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
 
 @handle_exceptions
 async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
-    from arcanna_mcp.constants import QUERY_EVENTS_URL
-
     """
     Before executing this tool, execute get_filter_fields to get available fields to filter on.
     Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria.
@@ -87,7 +86,9 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
               - 'now-2h' for the last two hours
               - 'now-30m' for the last 30 minutes
     size : int or None
-        Number of events to include in response for each job.
+        Number of events to include in response. If job_ids or job_titles provided it is the number of events per job.
+    page : int or None (default: 0)
+        Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
     sort_by_column : str or None
         The field to sort events by. Defaults to 'timestamp_inference' field.
     sort_order : str or None
@@ -221,6 +222,9 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     if request.end_date:
         body["end_date"] = request.end_date
 
+    if request.page:
+        body["page"] = request.page
+
     if request.size:
         body["size"] = request.size
 
@@ -231,7 +235,7 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
         body["sort_order"] = request.sort_order
 
     if request.filters:
-        body["filters"] = request.filters
+        body["filters"] =  request.model_dump().get("filters", [])
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
