@@ -2,23 +2,63 @@ import requests
 from typing import List, Callable
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
-from arcanna_mcp_server.models.generic_events import QueryEventsRequest
-from arcanna_mcp_server.models.generic_events import EventModel
+from arcanna_mcp_server.models.generic_events import QueryEventsRequest, EventModel
+from arcanna_mcp_server.models.filters import FilterFieldsRequest, FilterFieldsObject
+from arcanna_mcp_server.constants import QUERY_EVENTS_URL
+from arcanna_mcp_server.constants import FILTER_FIELDS_URL
 
 
 def export_tools() -> List[Callable]:
     return [
-        query_arcanna_events
+        query_arcanna_events,
+        get_filter_fields
      ]
 
 
 @handle_exceptions
-async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
-    from arcanna_mcp_server.constants import QUERY_EVENTS_URL
+async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsObject]:
+    """
+    Used to get available fields with available operators and the jobs where the fields are available.
+    If neither job_ids nor job_titles are provided, the search will include fields across all jobs.
+    To be used within query_arcanna_events tool to get a list of available fields to filter on.
 
-    f"""
+    Parameters:
+    -----------
+    job_ids : int or list of int or None
+        Job IDs to filter on.
+    job_titles : str or list of str or None
+        Job titles to filter on.
+    Returns:
+    --------
+    list of dictionary
+    A dictionary containing job details with the following keys:
+        - field_name (str): The field name.
+        - available_operators (list of str): A list of available operators for the specified field.
+        - available_in_jobs (list of int): A list of jobs where the field is available.
+    """
+    body = {}
+
+    if request.job_ids:
+        body["job_ids"] = request.job_ids
+
+    if request.job_titles:
+        body["job_titles"] = request.job_titles
+
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content-Type": "application/json"
+    }
+    response = requests.post(FILTER_FIELDS_URL, json=body, headers=headers)
+    return response.json()
+
+
+@handle_exceptions
+async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
+    """
     Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria.
     If neither job_ids nor job_titles are provided, the search will include events across all jobs.
+    Use get_filter_fields tool before to get available fields to apply 'filters' on.
+    In case of an internal server error, show the error to the user and do not use any other tool, ask the user how he would like to continue.
 
     Parameters:
     -----------
@@ -29,25 +69,33 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     event_ids : str or list of str or None
         Events IDs to filter on.
     decision_points_only : bool or None
-        If set to 'true', include only decision points in response and not the entire event.
+         If set to true, only decision points will be included in the response, excluding the full event.
     start_date : str or None
         Start date to filter events newer than this date.
         Date format:
           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-          - Elasticsearch format pattern letters: 'now' for now, 'y' for year, 'M' for month, 'd' for day, 'h' for hour, 'm' for minute, 's' for second.
-        Examples: 'now-1d' for last day, 'now-1h' for last hour, 'now-30m' for latest 30 minutes.
+          - Elasticsearch time expressions (e.g., 'now-1d', 'now-2h',  'now-30m')
+            Examples:
+              - 'now-1d' for the last day
+              - 'now-2h' for the last two hours
+              - 'now-30m' for the last 30 minutes
     end_date : str or None
         End date to filter events older than this date.
         Date format:
           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-          - Elasticsearch format pattern letters: 'now' for now, 'y' for year, 'M' for month, 'd' for day, 'h' for hour, 'm' for minute, 's' for second.
-        Examples: 'now-1d' for last day, 'now-1h' for last hour, 'now-30m' for latest 30 minutes.
+          - Elasticsearch time expressions (e.g., 'now-1d', 'now-2h',  'now-30m')
+            Examples:
+              - 'now-1d' for the last day
+              - 'now-2h' for the last two hours
+              - 'now-30m' for the last 30 minutes
     size : int or None
-        Number of events to include in response for each job.
+        Number of events to include in response. If job_ids or job_titles provided it is the number of events per job.
+    page : int or None (default: 0)
+        Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
     sort_by_column : str or None
-        The field to sort events by. Defaults to 'timestamp_inference' field.
+        The field used to sort events. Defaults to the 'timestamp_inference' field; use the default field unless the user specifies a different one.
     sort_order : str or None
-        The order in which to sort events by. Defaults to 'desc' order.
+        The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
     filters : list of dict or None
       Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
       Each filter in list is a dictionary with keys: "field", "operator" and "value"
@@ -177,6 +225,9 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     if request.end_date:
         body["end_date"] = request.end_date
 
+    if request.page:
+        body["page"] = request.page
+
     if request.size:
         body["size"] = request.size
 
@@ -187,7 +238,7 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
         body["sort_order"] = request.sort_order
 
     if request.filters:
-        body["filters"] = request.filters
+        body["filters"] =  request.model_dump().get("filters", [])
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,

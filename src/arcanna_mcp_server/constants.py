@@ -34,3 +34,5 @@ INTEGRATION_PARAMETERS_SCHEMA_URL = ARCANNA_HOST + "/api/v2/resources/integratio
 
 # events operations
 QUERY_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/query"
+
+FILTER_FIELDS_URL = ARCANNA_HOST + "/api/v2/filters/fields"
