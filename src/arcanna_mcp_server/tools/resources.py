@@ -1,6 +1,6 @@
 from typing import Callable, Dict, List, Optional
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
-from arcanna_mcp_server.constants import RESOURCES_CRUD_URL
+from arcanna_mcp_server.constants import INTEGRATION_PARAMETERS_SCHEMA_URL, RESOURCES_CRUD_URL
 from arcanna_mcp_server.models.base_resource import BaseResource
 from arcanna_mcp_server.models.resource_type import ResourceType
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
@@ -30,8 +30,6 @@ async def integration_parameters_schema(integration_type: Optional[str] = None, 
         job_resource.pipeline_integrations.parameters path. Expected parameters must be specified depending
         on job_resource.pipeline_integrations.role value.
     """
-    from arcanna_mcp_server.constants import INTEGRATION_PARAMETERS_SCHEMA_URL
-
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
@@ -140,8 +138,8 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
                     'title': '<job_title>',
                     'description': '<job_description>',
                     'category': <job_category>',
-                    'features': [
-                        '<feature_name1>', '<feature_name2'>
+                    'decision_points': [
+                        '<decision_point_name1>', '<decision_point_name2'>
                     ],
                     'advanced_settings: [
                         'custom_labels': [
@@ -160,7 +158,8 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
                                 '<param_key_1>': '<param_value_1>'
                             }
                         }
-                    ]
+                    ],
+                    'remove_missing_pipeline_integrations': false
                 },
                 'type': 'job'
             }
@@ -225,8 +224,11 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
         JSON schema and information about them can be found in the response on path properties.<integration_type>.properties.
 
 
-        A job allows to define a flow by chaining a few integrations to collect data, making alert triage, do some post
+        A job allows to define a flow by chaining integrations to collect data, making alert triage, do some post
         decisions and saving the results. Usually a job covers a use case for a class of security threats.
+
+        If the 'pipeline_integrations' is given empty and the job exists it will leave the resulting job.pipeline_integrations
+        unchanged.
 
 
         Examples:
