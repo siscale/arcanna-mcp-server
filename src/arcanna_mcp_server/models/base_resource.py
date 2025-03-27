@@ -1,8 +1,7 @@
 
-from pydantic import BaseModel, Field, computed_field
+from enum import Enum
+from pydantic import BaseModel, Field, computed_field, model_validator
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
-
-from arcanna_mcp_server.models.resource_type import ResourceType
 
 
 class ApiKeyProperties(BaseModel):
@@ -22,7 +21,7 @@ class IntegrationProperties(BaseModel):
 
 class Label(BaseModel):
     name: str
-    hex_color: str
+    hex_color: Optional[str] = Field(default=None, description="Label hex color, used for displaying in Arcanna UI")
 
 
 class AutoRetrainOptions(BaseModel):
@@ -56,14 +55,26 @@ class MonitoringSettings(BaseModel):
 class JobProperties(BaseModel):
     class PipelineIntegration(BaseModel):
         resource: str
-        integration_type: str
+        integration_type: Literal[
+            'input', 'enrichment', 'processor',
+            'case_creation', 'post_decision', 'output'
+        ]
         enabled: bool
         auto_id: Optional[str] = Field(default=None)
+        storage_tag: Optional[str] = Field(default=None)
+        storage_tag_display_name: Optional[str] = Field(default=None)
         parameters: Dict[str, Any]
 
-    class Feature(BaseModel):
-        name: str
-        type: str
+        @model_validator(mode='after')
+        def validate_pipeline_integration(self):
+            if self.storage_tag and self.integration_type != 'input':
+                raise ValueError("storage_tag can be specified only for integration_type 'input'")
+            forbidden_characters = [' ', '.', '*']
+            if self.storage_tag:
+                for forbidden_character in forbidden_characters:
+                    if forbidden_character in self.storage_tag:
+                        raise ValueError(f"storage_tag cannot contain forbiden characters: {forbidden_characters}")
+            return self
 
     class AdvancedSettings(BaseModel):
         custom_labels: Optional[List[Label]] = Field(default=None)
@@ -73,10 +84,15 @@ class JobProperties(BaseModel):
     title: str
     description: Optional[str] = None
     category: str
-    features: List[str]
+    decision_points: List[str]
     feedback_columns: Optional[List[str]] = None
     advanced_settings: Optional[AdvancedSettings] = None
     pipeline_integrations: List[PipelineIntegration]
+    remove_missing_pipeline_integrations: Optional[bool] = Field(
+        default=False, description=(
+            "When true, it indicates that pipeline_integrations which are not found in the request will be removed. "
+            "Otherwise missing pipeline_integrations will be taken from previous version of the job.")
+        )
 
 
 ResourcePropertiesType = Union[ApiKeyProperties, IntegrationProperties, JobProperties]
@@ -88,17 +104,17 @@ class ResourceCommon(BaseModel):
 
 
 class ApiKeyResource(ResourceCommon):
-    type: Literal[ResourceType.API_KEY] = ResourceType.API_KEY.value
+    type: Literal['api_key']
     properties: ApiKeyProperties
 
 
 class IntegrationResource(ResourceCommon):
-    type: Literal[ResourceType.INTEGRATION] = ResourceType.INTEGRATION.value
+    type: Literal['integration']
     properties: IntegrationProperties
 
 
 class JobResource(ResourceCommon):
-    type: Literal[ResourceType.JOB] = ResourceType.JOB.value
+    type: Literal['job']
     properties: JobProperties
 
 
