@@ -1,11 +1,9 @@
-import json
-import logging
 from typing import Callable, Dict, List, Optional
-from arcanna_mcp.environment import MANAGEMENT_API_KEY
-from arcanna_mcp.constants import RESOURCES_CRUD_URL
-from arcanna_mcp.models.base_resource import BaseResource
-from arcanna_mcp.models.resource_type import ResourceType
-from arcanna_mcp.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
+from arcanna_mcp_server.constants import INTEGRATION_PARAMETERS_SCHEMA_URL, RESOURCES_CRUD_URL
+from arcanna_mcp_server.models.base_resource import BaseResource
+from arcanna_mcp_server.models.resource_type import ResourceType
+from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 import requests
 
 
@@ -32,8 +30,6 @@ async def integration_parameters_schema(integration_type: Optional[str] = None, 
         job_resource.pipeline_integrations.parameters path. Expected parameters must be specified depending
         on job_resource.pipeline_integrations.role value.
     """
-    from arcanna_mcp.constants import INTEGRATION_PARAMETERS_SCHEMA_URL
-
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
@@ -378,8 +374,6 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
 
         response = requests.post(RESOURCES_CRUD_URL, json=body, headers=headers, params=params)
         response_json = response.json()
-        logger = logging.getLogger(__name__)
-        logger.info(f">> response_json {json.dumps(response_json, indent=4)}")
     except Exception as e:
         return {"error": str(e)}
     return response_json
