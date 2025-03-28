@@ -2,7 +2,7 @@ from typing import Callable, List
 
 import requests
 
-from arcanna_mcp_server.environment import API_KEY
+from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.constants import HEALTH_CHECK_URL
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 
@@ -20,11 +20,13 @@ async def health_check() -> dict:
         Returns:
         --------
         dict
-            - status (bool): If false, the server is up an running but API key is invalid. If true, api key is also
-            authorized
+            A dictionary with the following keys:
+            - status (str): The current status of the operation
+            - reason (str): Short description of the error if one occurred; empty if successful.
+            - reason_details:  (str): A message describing the error if one occurred; empty if successful.
     """
     headers = {
-        "x-arcanna-api-key": API_KEY,
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
     response = requests.get(HEALTH_CHECK_URL, headers=headers)
