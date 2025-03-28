@@ -21,7 +21,6 @@ Desktop).
         "arcanna-mcp-server"
       ],
       "env": {
-        "ARCANNA_INPUT_API_KEY": "YOUR_ARCANNA_INPUT_API_KEY",
         "ARCANNA_MANAGEMENT_API_KEY": "YOUR_ARCANNA_MANAGEMENT_API_KEY",
         "ARCANNA_HOST": "YOUR_ARCANNA_HOST",
         "ARCANNA_USER": "YOUR_USERNAME"
@@ -49,8 +48,6 @@ Desktop).
         "-i",
         "--rm",
         "-e",
-        "ARCANNA_INPUT_API_KEY",
-        "-e",
         "ARCANNA_MANAGEMENT_API_KEY",
         "-e",
         "ARCANNA_HOST",
@@ -59,7 +56,6 @@ Desktop).
         "mcp/arcanna"
       ],
       "env": {
-        "ARCANNA_INPUT_API_KEY": "<YOUR_ARCANNA_API_KEY_HERE>",
         "ARCANNA_MANAGEMENT_API_KEY": "<ARCANNA_MANAGEMENT_API_KEY>",
         "ARCANNA_HOST": "<YOUR_ARCANNA_HOST_HERE>",
         "ARCANNA_USER": "<YOUR_USERNAME_HERE>"
@@ -123,4 +119,3 @@ Desktop).
 - **health_check**
   - Verify server status and API key validity
   - Returns API key authorization status
-
