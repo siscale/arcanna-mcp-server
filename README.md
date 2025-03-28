@@ -37,7 +37,7 @@ Desktop).
 
 #### Configuration
 1. Change directory to the directory where the Dockerfile is.
-2. Run ```docker build -t arcanna/arcanna-mcp-server. --progress=plain --no-cache```
+2. Run ```docker build -t arcanna/arcanna-mcp-server . --progress=plain --no-cache```
 3. Add the configuration bellow to your claude desktop config.
 ```json
 {
