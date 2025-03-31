@@ -21,7 +21,6 @@ Desktop).
         "arcanna-mcp-server"
       ],
       "env": {
-        "ARCANNA_INPUT_API_KEY": "YOUR_ARCANNA_INPUT_API_KEY",
         "ARCANNA_MANAGEMENT_API_KEY": "YOUR_ARCANNA_MANAGEMENT_API_KEY",
         "ARCANNA_HOST": "YOUR_ARCANNA_HOST",
         "ARCANNA_USER": "YOUR_USERNAME"
@@ -37,7 +36,7 @@ Desktop).
 
 #### Configuration
 1. Change directory to the directory where the Dockerfile is.
-2. Run ```docker build -t arcanna/arcanna-mcp-server. --progress=plain --no-cache```
+2. Run ```docker build -t arcanna/arcanna-mcp-server . --progress=plain --no-cache```
 3. Add the configuration bellow to your claude desktop config.
 ```json
 {
@@ -49,17 +48,14 @@ Desktop).
         "-i",
         "--rm",
         "-e",
-        "ARCANNA_INPUT_API_KEY",
-        "-e",
         "ARCANNA_MANAGEMENT_API_KEY",
         "-e",
         "ARCANNA_HOST",
         "-e",
         "ARCANNA_USER",
-        "mcp/arcanna"
+        "arcanna/arcanna-mcp-server"
       ],
       "env": {
-        "ARCANNA_INPUT_API_KEY": "<YOUR_ARCANNA_API_KEY_HERE>",
         "ARCANNA_MANAGEMENT_API_KEY": "<ARCANNA_MANAGEMENT_API_KEY>",
         "ARCANNA_HOST": "<YOUR_ARCANNA_HOST_HERE>",
         "ARCANNA_USER": "<YOUR_USERNAME_HERE>"
@@ -123,4 +119,3 @@ Desktop).
 - **health_check**
   - Verify server status and API key validity
   - Returns API key authorization status
-

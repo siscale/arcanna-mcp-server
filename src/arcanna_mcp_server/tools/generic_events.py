@@ -1,17 +1,17 @@
 import requests
-from typing import List, Callable
+from typing import List, Callable, Optional
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.models.generic_events import QueryEventsRequest, EventModel
 from arcanna_mcp_server.models.filters import FilterFieldsRequest, FilterFieldsObject
-from arcanna_mcp_server.constants import QUERY_EVENTS_URL
-from arcanna_mcp_server.constants import FILTER_FIELDS_URL
+from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2
 
 
 def export_tools() -> List[Callable]:
     return [
         query_arcanna_events,
-        get_filter_fields
+        get_filter_fields,
+        add_feedback_to_event
      ]
 
 
@@ -49,6 +49,55 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
         "Content-Type": "application/json"
     }
     response = requests.post(FILTER_FIELDS_URL, json=body, headers=headers)
+    return response.json()
+
+
+@handle_exceptions
+async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_name: Optional[str]) -> dict:
+    """
+    Provide feedback on a previously ingested event by Arcanna job. The provided feedback will be used to train future AI models
+    and make better decisions on new and similar events.
+
+    Parameters:
+    -----------
+    job_id : int
+        Unique identifier for the job.
+    event_id : dict
+        Unique identifier of the event you want to provide feedback for.
+    label: str
+        Decision label to be applied for the event. Can be for example Escalate or Drop. Escalate means that the user considers
+        the event should be investigated and escalated. Drop means that the event is a false positive and should not
+        be investigated.
+    storage_name: str or None
+        Storage name to be used for feedback. Use only if the job have multiple storages defined.
+        If none the feedback will be applied to the latest event with event_id ingested.
+
+    Returns:
+    --------
+    dict
+        A dictionary containing feedback details with the following keys:
+
+        - status (str): Specifies if the feedback was successfully sent or not.
+    """
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content-Type": "application/json"
+    }
+
+    if job_id is None:
+        raise Exception("Job ID is required.")
+
+    if event_id is None:
+        raise Exception("Event ID is required.")
+
+    if label is None:
+        raise Exception("Label is required.")
+
+    formatted_url = EVENT_FEEDBACK_URL_V2.format(job_id, event_id) + f'?feedback_label={label}'
+    if storage_name:
+        formatted_url += f'&storage_name={storage_name}'
+
+    response = requests.put(formatted_url, headers=headers)
     return response.json()
 
 
