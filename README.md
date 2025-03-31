@@ -53,7 +53,7 @@ Desktop).
         "ARCANNA_HOST",
         "-e",
         "ARCANNA_USER",
-        "mcp/arcanna"
+        "arcanna/arcanna-mcp-server"
       ],
       "env": {
         "ARCANNA_MANAGEMENT_API_KEY": "<ARCANNA_MANAGEMENT_API_KEY>",
