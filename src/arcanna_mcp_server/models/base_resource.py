@@ -1,5 +1,3 @@
-
-from enum import Enum
 from pydantic import BaseModel, Field, computed_field, model_validator
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
