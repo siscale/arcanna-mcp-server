@@ -1,7 +1,5 @@
 from typing import Callable, List
-
 import requests
-
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.constants import HEALTH_CHECK_URL
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
@@ -16,7 +14,7 @@ def export_tools() -> List[Callable]:
 @handle_exceptions
 async def health_check() -> dict:
     """
-        Health check of Arcanna API Server.
+        Health check of Arcanna Management API Server.
         Returns:
         --------
         dict
