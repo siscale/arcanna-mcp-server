@@ -32,14 +32,11 @@ Desktop).
         "ARCANNA_MANAGEMENT_API_KEY",
         "-e",
         "ARCANNA_HOST",
-        "-e",
-        "ARCANNA_USER",
         "arcanna/arcanna-mcp-server"
       ],
       "env": {
         "ARCANNA_MANAGEMENT_API_KEY": "<ARCANNA_MANAGEMENT_API_KEY>",
-        "ARCANNA_HOST": "<YOUR_ARCANNA_HOST_HERE>",
-        "ARCANNA_USER": "<YOUR_USERNAME_HERE>"
+        "ARCANNA_HOST": "<YOUR_ARCANNA_HOST_HERE>"
       }
     }
   }

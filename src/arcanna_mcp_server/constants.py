@@ -24,3 +24,9 @@ EVENT_FEEDBACK_URL_V2 = ARCANNA_HOST + "/api/v2/events/{}/{}/feedback"
 START_JOB_URL = ARCANNA_HOST + "/api/v2/jobs/{}/start"
 STOP_JOB_URL = ARCANNA_HOST + "/api/v2/jobs/{}/stop"
 TRAIN_JOB_URL = ARCANNA_HOST + "/api/v2/jobs/{}/train"
+
+# metrics
+METRICS_JOB_URL = ARCANNA_HOST + "/api/v2/metrics/job"
+METRICS_JOB_AND_LATEST_MODEL_URL = ARCANNA_HOST + "/api/v2/metrics/job_and_latest_model"
+METRICS_MODEL_URL = ARCANNA_HOST + "/api/v2/metrics/model"
+METRICS_MODEL_URL_REQUEST_RECOMPUTE_METRICS = ARCANNA_HOST + "/api/v2/metrics/model/request_recompute_metrics"
