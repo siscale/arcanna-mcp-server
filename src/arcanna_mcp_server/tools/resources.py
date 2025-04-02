@@ -383,7 +383,9 @@ async def get_resources(
         resource_type: Optional[ResourceType] = None, title: Optional[str] = None, id: Optional[str] = None) -> Dict:
     """
         Returns a list of resources. Parameters behave as filters.
-        If no parameter is provided all available resources from arcanna are returned.
+        If no parameter is provided all available resources from arcanna are returned. Information about jobs/use cases
+        is minimal if no filters are provided. To get full information about a resource it must be called with title, id
+        filter present.
 
         Parameters:
         -----------
