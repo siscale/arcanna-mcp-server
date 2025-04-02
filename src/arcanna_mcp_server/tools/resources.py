@@ -175,8 +175,8 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
 
         '<job_category>': Arcanna suports the following types of jobs: 'Decision intelligence', 'Event centric decision intelligence'
         and 'Automated root cause analysis'. 'Decision intelligence' does alert triage by tagging alerts with different labels.
-        For ease of use this type of jobs groups alerts by the selected feature set. A group of alerts with the same feature set
-        is called bucket. By doing this groupping the amount of feedback the user must give is reduced.
+        For ease of use this type of jobs groups alerts by the selected decision points set. A group of alerts with the same decision points
+        set is called bucket. By doing this groupping the amount of feedback the user must give is reduced.
         'Event centric decision intelligence' is similar with Decision intelligence in the sense that it does the same
         alert triage. However in this case there is no grouping in buckets. 'Automated root cause analysis' jobs do clustering
         of alerts by a set of fields and within a clusters it splits the events between a root cause and sympthomps. All type of
@@ -188,7 +188,7 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
 
         Predominantly, users will want to create 'Decision intelligence' jobs.
 
-        '<feature_name1>': represents the path of input fields which are used by arcanna in the alert triage procesess.
+        '<decision_point_name1>': represents the path of input fields which are used by arcanna in the alert triage procesess.
         Nested fields used dot notation. E.g.: source.ip, source.domain. Only the selected will be used in training and
         decision making.
 
@@ -273,7 +273,7 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
                     "title": "Exposer input job from REST API",
                     "description": "This is a sample job",
                     "category": "Decision intelligence",
-                    "features": [
+                    "decision_points": [
                         "event.outcome",
                         "event.category"
                     ],
