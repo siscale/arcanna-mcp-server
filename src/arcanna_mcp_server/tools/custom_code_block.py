@@ -7,34 +7,107 @@ from arcanna_mcp_server.constants import CUSTOM_CODE_BLOCK_TEST_URL, CUSTOM_CODE
 
 def export_tools() -> List[Callable]:
     return [
-        generate_code_agent,
+        generate_code_instructions,
         save_code,
         execute_code
      ]
 
 
-def compute_python_function(user_query: str) -> str:
-    return ""
+# def compute_python_function(user_query: str) -> str:
+#     return ""
+#
+#
+# @handle_exceptions
+# async def generate_code_agent(user_query: str) -> str:
+#     """
+#     Tool to be used when generating code is requested.
+#     Use this method to generate a code block from a user query.
+#     After executing this tool ask the user if he wants to execute the code block using the execute_code tool.
+#
+#     Parameters:
+#     -----------
+#     user_query : str
+#         User query to generate a code block from chat.
+#
+#     Returns:
+#     --------
+#     str
+#          A Python function that follows the template: def transform(input_record):     # body of the function\n    return input_record
+#     """
+#     return compute_python_function(user_query)
 
 
 @handle_exceptions
-async def generate_code_agent(user_query: str) -> str:
+async def generate_code_instructions() -> str:
     """
-    Tool to be used when generating code is requested.
-    Use this method to generate a code block from a user query.
-    After executing this tool ask the user if he wants to execute the code block using the execute_code tool.
-
-    Parameters:
-    -----------
-    user_query : str
-        User query to generate a code block from chat.
+    Generates instructions for creating a code block for Arcanna integration.
+    This tool should be used whenever code generation is requested.
 
     Returns:
-    --------
-    str
-         A Python function that follows the template: def transform(input_record):     # body of the function\n    return input_record
+        str: Instructions for generating a code block compatible with Arcanna integration.
     """
-    return compute_python_function(user_query)
+
+    custom_code_block_system_prompt = """
+    1. Generate the code following the instructions below.
+    2. Test the code using execute_tool provided.
+    3. Show to the user the result and ask for saving the code approval.
+
+    As a Python expert your task is to create the following function:
+    def transform(input_record):
+        # body of the function
+    return input_record
+
+    input_record is an alert/incident/event in cybersecurity and a dictionary in python.
+
+    There are some constraints you must respect:
+    1. The function should be written in python programming language only. If the user requests
+    some code in other programming language, politely refuse to answer.
+    2. Do not import packages. You will be provided a list of the packages you are allowed to use, but do not
+    explicitly import them, they are already imported behind the scene.
+
+    Do not use Python compound assignment operators.
+    Python compound assignment operators (+=, -=, *=, /=, %=, //=, **=, &=, |=, ^=, >>=, <<=) are not available since they are not safe to use in our environment.
+
+    You must use only the following packages and methods:
+    - Python’s built-ins: None, False, True, abs, bool, bytes, callable, chr, complex, divmod, float, hash, hex, id, int, isinstance, issubclass, len, oct, ord, pow, range, repr, round, slice, sorted, str, tuple, zip, list, dict, set, sum, max, min, iter, all, any, enumerate, map, filter
+    - requests (methods allowed to use are: get, post, put, delete)
+    - json (methods allowed to use are: loads, dumps)
+    - regex (methods allowed to use are: findall, search, split, sub)
+    - time (methods allowed to use are: time, sleep, localtime, strftime, strptime, gmtime, mktime, monotonic)
+    - datetime (methods allowed to use are: now, utcnow, today, fromtimestamp, strptime, strftime, timedelta, combine, date)
+    - math (methods allowed to use are: log)
+    - custom functions: flatten_dict({"k1": {"k2": "v2"}}) -> {"k1.k2": "v2"}
+    - input_record: get_decision_points (allows you to get the current decision points of the record in form of a dictionary <decision_point_name, decision_point_value)
+    - llm: generate (allows the usage of a Large Language Model integration, it requires integration_name and prompt as arguments of the function)
+    You are not allowed to chain these methods.
+    For any code generated, ensure that it can run using only the allowed packages and methods.
+    If the user requests any package besides the ones you are allowed to use, you should politely refuse to respond to his request explaining the limitations.
+
+    Be aware that we are using a sandboxing library to run the code called RestrictedPython, and some errors could be related to that.
+
+    For example: If the user asks to put current timestamp in input_record you should provide the following block of code
+    ```python
+    def transform(input_record):
+        # Get the current timestamp
+        current_timestamp = datetime.now()
+        current_timestamp = current_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+        # Add the current timestamp to the input_record
+        input_record['timestamp'] = current_timestamp
+
+        return input_record
+    ```
+    You shouldn't import datetime or any other package. You are not allowed to import packages. You are not allowed to chain methods.
+    datetime.now().strftime("%Y-%m-%d %H:%M:%S") is not allowed. You should instead call each method separately
+
+    Do not import any packages. Use allowed packages without importing them.
+
+    The format of the code should follow these rules:
+    - You must add an indentation of 4 spaces.
+    - Return only the function body and nothing else.
+    - The first line should be the function definition. The last line should be the return statement.
+    """
+    return custom_code_block_system_prompt
 
 
 @handle_exceptions
