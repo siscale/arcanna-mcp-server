@@ -10,7 +10,6 @@ from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EV
 def export_tools() -> List[Callable]:
     return [
         query_arcanna_events,
-        get_filter_fields,
         add_feedback_to_event
      ]
 
@@ -18,7 +17,7 @@ def export_tools() -> List[Callable]:
 @handle_exceptions
 async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsObject]:
     """
-    Used to get available fields with available operators and the jobs where the fields are available.
+    Used to get available fields.
     If neither job_ids nor job_titles are provided, the search will include fields across all jobs.
     To be used within query_arcanna_events tool to get a list of available fields to filter on.
 
@@ -30,11 +29,8 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
         Job titles to filter on.
     Returns:
     --------
-    list of dictionary
-    A dictionary containing job details with the following keys:
-        - field_name (str): The field name.
-        - available_operators (list of str): A list of available operators for the specified field.
-        - available_in_jobs (list of int): A list of jobs where the field is available.
+    list of str
+    A list containing the fields to filter on.
     """
     body = {}
 
@@ -118,7 +114,9 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     event_ids : str or list of str or None
         Events IDs to filter on.
     decision_points_only : bool or None
-         If set to true, only decision points will be included in the response, excluding the full event.
+         If set to true, only decision points will be included in the events response, excluding the full event.
+    count_results_only : bool or None
+         If set to true, only the total count of events will be returned, and no events.
     start_date : str or None
         Start date to filter events newer than this date.
         Date format:

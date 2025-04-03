@@ -40,11 +40,11 @@ def export_tools() -> List[Callable]:
 @handle_exceptions
 async def generate_code_instructions(user_query: str) -> str:
     """
-    Generates instructions for creating a code block for Arcanna integration.
+    Generates instructions for creating a Python code block for Arcanna integration.
     This tool should be used whenever code generation is requested.
 
     Returns:
-        str: Instructions for generating a code block compatible with Arcanna integration.
+        str: Instructions for generating a Python code block compatible with Arcanna integration.
     """
 
     custom_code_block_system_prompt = """
