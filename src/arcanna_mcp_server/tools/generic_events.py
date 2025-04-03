@@ -17,7 +17,7 @@ def export_tools() -> List[Callable]:
 @handle_exceptions
 async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsObject]:
     """
-    Used to get available fields.
+    Used to get available fields with available operators and the jobs where the fields are available.
     If neither job_ids nor job_titles are provided, the search will include fields across all jobs.
     To be used within query_arcanna_events tool to get a list of available fields to filter on.
 
@@ -29,8 +29,11 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
         Job titles to filter on.
     Returns:
     --------
-    list of str
-    A list containing the fields to filter on.
+    list of dictionary
+    A dictionary containing job details with the following keys:
+        - field_name (str): The field name.
+        - available_operators (list of str): A list of available operators for the specified field.
+        - available_in_jobs (list of int): A list of jobs where the field is available.
     """
     body = {}
 

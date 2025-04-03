@@ -39,7 +39,7 @@ async def metrics_job(job_id: int, start_date: str=None, end_date: str=None) -> 
         - overall_recall (float or none) : The mean recall across decisions
         - overall_precision (float or none) : The mean precision across decisions
         - time_saved_minutes (float or none) : The time saved by the job in minutes. Calculated as: Average Time spent on investigating an alert * Alerts with correct Arcanna decisions.
-        - confusion_matrix (list or none) : The confusion matrix of the model decisions
+        - confusion_matrix (list or none) : The confusion matrix of the model decisions, plot it is as a confusion matrix
         - metrics_per_decision (dict) : Metrics per decision type for the job
         - active_model_id (str or none) : The unique identifier of the active model
         - all_model_ids (list or none) : List of all model identifiers
@@ -88,7 +88,7 @@ async def metrics_job_and_latest_model(job_id: int) -> GetJobAndLatestModelMetri
             - overall_f1_score (float or None): The mean F1 score across decisions
             - overall_recall (float or None): The mean recall across decisions
             - overall_precision (float or None): The mean precision across decisions
-            - confusion_matrix (List[List[int]] or None): The confusion matrix of the model decisions
+            - confusion_matrix (List[List[int]] or None): The confusion matrix of the model decisions, plot it is as a confusion matrix
             - metrics_per_decision (Dict[str, MetricsPerDecision]): Metrics per decision type
      """
 
@@ -120,7 +120,7 @@ async def metrics_model(job_id: int, model_id: str) -> GetModelMetricsResponse:
         - overall_f1_score (float or None): The mean F1 score across decisions
         - overall_recall (float or None): The mean recall across decisions
         - overall_precision (float or None): The mean precision across decisions
-        - confusion_matrix (List[List[int]] or None): The confusion matrix of the model decisions
+        - confusion_matrix (List[List[int]] or None): The confusion matrix of the model decisions, plot it is as a confusion matrix
         - metrics_per_decision (Dict[str, MetricsPerDecision]): Metrics per decision type
      """
 
