@@ -63,7 +63,16 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
 
         Request is handled in a generic way as parameters for each type of available resource can differ.
 
-        The end goal is to be able to create or update a job.
+        The end goal is to be able to create or update a job (alias for use case).
+
+        When updating the job, always call get_resources() by title to make sure you are not overwriting by mistake parameters that 
+        are already found in the job. Parameters present in the job shouldn't be changed if the user doesn't explicity requests for it.
+        When attempting to update an existing job always confirm with the user before calling upsert_resources().
+
+        job.properties.pipeline_integrations.parameters can be discovered by calling integration_parameters_schema() based on
+        integration_type. They are dynamic for each integration, and they change by the role they have in the pipeline.
+        Role of an integration in the job's pipeline_integrations is specified by the parameter
+        job.properties.pipeline_integrations.integration_type.
 
         --------------------------
 
@@ -119,6 +128,7 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
         '<integration_type>': Available values for integration types and their available parameters
         can be retrieved by calling integration_parameters_schema(). Response is returned as a JSON schema. 
         'integration_type' can be any of the keys from integration_parameters_schema() response on the properties path.
+        Examples can be: 'Elasticsearch', 'External REST API', 'QRadar', 'VirusTotal', etc.
 
         'parameters': <param_key_1>, <param_value_1> keys and values are dynamic for each type of integration.
         They are described  in the response from  integration_parameters_schema() on the path
