@@ -38,7 +38,7 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
-async def generate_code_instructions() -> str:
+async def generate_code_instructions(user_query: str) -> str:
     """
     Generates instructions for creating a code block for Arcanna integration.
     This tool should be used whenever code generation is requested.
@@ -77,8 +77,13 @@ async def generate_code_instructions() -> str:
     - datetime (methods allowed to use are: now, utcnow, today, fromtimestamp, strptime, strftime, timedelta, combine, date)
     - math (methods allowed to use are: log)
     - custom functions: flatten_dict({"k1": {"k2": "v2"}}) -> {"k1.k2": "v2"}
-    - input_record: get_decision_points (allows you to get the current decision points of the record in form of a dictionary <decision_point_name, decision_point_value)
+    - input_record: 
+        - get_arcanna_fields (retrieve the fields added by Arcanna processing)
+        - get_timestamp (retrieve the timestamp of the alert)
+        - get_timestamp_inference (retrieve the Arcanna inference timestamp of the alert)
+        - get_decision_points (allows you to get the current decision points of the record in form of a dictionary <decision_point_name, decision_point_value)
     - llm: generate (allows the usage of a Large Language Model integration, it requires integration_name and prompt as arguments of the function)
+    - env_variables (variable containing the environment variables, e.g. env_variables["JOB_ID"] to retrieve the job ID)
     You are not allowed to chain these methods.
     For any code generated, ensure that it can run using only the allowed packages and methods.
     If the user requests any package besides the ones you are allowed to use, you should politely refuse to respond to his request explaining the limitations.
@@ -107,7 +112,7 @@ async def generate_code_instructions() -> str:
     - Return only the function body and nothing else.
     - The first line should be the function definition. The last line should be the return statement.
     """
-    return custom_code_block_system_prompt
+    return user_query + '\n' + custom_code_block_system_prompt
 
 
 @handle_exceptions
