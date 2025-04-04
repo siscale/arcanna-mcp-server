@@ -10,7 +10,6 @@ from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EV
 def export_tools() -> List[Callable]:
     return [
         query_arcanna_events,
-        get_filter_fields,
         add_feedback_to_event
      ]
 
@@ -118,7 +117,9 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     event_ids : str or list of str or None
         Events IDs to filter on.
     decision_points_only : bool or None
-         If set to true, only decision points will be included in the response, excluding the full event.
+         If set to true, only decision points will be included in the events response, excluding the full event.
+    count_results_only : bool or None
+         If set to true, only the total count of events will be returned, and no events.
     start_date : str or None
         Start date to filter events newer than this date.
         Date format:
@@ -137,6 +138,8 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
               - 'now-1d' for the last day
               - 'now-2h' for the last two hours
               - 'now-30m' for the last 30 minutes
+    date_field : str or None
+        The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
     size : int or None
         Number of events to include in response. If job_ids or job_titles provided it is the number of events per job.
     page : int or None (default: 0)
