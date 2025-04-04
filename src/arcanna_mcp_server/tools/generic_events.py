@@ -138,6 +138,8 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
               - 'now-1d' for the last day
               - 'now-2h' for the last two hours
               - 'now-30m' for the last 30 minutes
+    date_field : str or None
+        The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
     size : int or None
         Number of events to include in response. If job_ids or job_titles provided it is the number of events per job.
     page : int or None (default: 0)
