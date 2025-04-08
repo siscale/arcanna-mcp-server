@@ -107,6 +107,7 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     At least one of 'job_ids', 'job_titles', 'event_ids', 'size', 'filters', 'start_date', or 'end_date' must be provided.
     Both the job_ids and job_title fields may be missing.
     If neither job_ids nor job_titles are provided, the search will include events across all jobs.
+    When working with timestamps: the '@timestamp' field represents the original alert/event timestamp, while the 'timestamp_inference' field represents the time it was ingested into Arcanna.
     In case of an internal server error, show the error to the user and do not use any other tool, ask the user how he would like to continue.
 
     Parameters:
