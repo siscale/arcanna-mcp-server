@@ -103,9 +103,10 @@ async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_
 @handle_exceptions
 async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     """
-    Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria.
+    Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria (size, start_date, end_date, filters).
+    At least one of 'job_ids', 'job_titles', 'event_ids', 'size', 'filters', 'start_date', or 'end_date' must be provided.
+    Both the job_ids and job_title fields may be missing.
     If neither job_ids nor job_titles are provided, the search will include events across all jobs.
-    Use get_filter_fields tool before to get available fields to apply 'filters' on.
     In case of an internal server error, show the error to the user and do not use any other tool, ask the user how he would like to continue.
 
     Parameters:
@@ -124,20 +125,10 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
         Start date to filter events newer than this date.
         Date format:
           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-          - Elasticsearch time expressions (e.g., 'now-1d', 'now-2h',  'now-30m')
-            Examples:
-              - 'now-1d' for the last day
-              - 'now-2h' for the last two hours
-              - 'now-30m' for the last 30 minutes
     end_date : str or None
         End date to filter events older than this date.
         Date format:
           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-          - Elasticsearch time expressions (e.g., 'now-1d', 'now-2h',  'now-30m')
-            Examples:
-              - 'now-1d' for the last day
-              - 'now-2h' for the last two hours
-              - 'now-30m' for the last 30 minutes
     date_field : str or None
         The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
     size : int or None
@@ -242,9 +233,9 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
                 "field": "arcanna.consensus",
                 "operator": "is one of",
                 "value": ['Escalate', 'Drop']
-                    }}]
+                }}]
             }}
-    
+
     Returns:
     --------
     list of dictionary
@@ -254,7 +245,7 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
         - job_title (str): Unique identifier for the job where the event was pulled from.
         - decision_points (dict): Dictionary of decision points. Each key in decision_points is a feature used in model training.
         - arcanna (dict or None): Dictionary containing fields added by Arcanna processing.
-        - raw_event (dict or None): Dictionary containing the raw event data.
+        - raw_event (dict or None): Dictionary containing the raw event data. Event timestamp field is '@timestamp' (use it every time when event/alert timestamp is requested).
     """
 
     body = {}
