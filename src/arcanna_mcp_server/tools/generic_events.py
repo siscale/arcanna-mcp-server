@@ -134,7 +134,7 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
         The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
     size : int or None
         Number of events to include in response. If job_ids or job_titles provided it is the number of events per job.
-    page : int or None (default: 1 - first page of events)
+    page : int or None (page counting starts from 0, default: 0)
         Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
     sort_by_column : str or None
         The field used to sort events. Defaults to the 'timestamp_inference' field; use the default field unless the user specifies a different one.
