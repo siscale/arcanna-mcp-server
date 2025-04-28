@@ -11,7 +11,9 @@ from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EV
 def export_tools() -> List[Callable]:
     return [
         query_arcanna_events,
-        add_feedback_to_event
+        add_feedback_to_event,
+        reprocess_events,
+        reprocess_event_by_id
      ]
 
 
@@ -294,11 +296,12 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
 
 
 @handle_exceptions
-async def reprocess_arcanna_events(request: EventsReprocessingModelRequest):
+async def reprocess_events(request: EventsReprocessingModelRequest):
     """
     Reprocess events filtered by specific filtering criteria (size, start_date, end_date, filters) for a specific job_id.
     When working with timestamps: the '@timestamp' field represents the original alert/event timestamp, while the 'timestamp_inference' field represents the time it was ingested into Arcanna.
-
+    The default size is 5 if not specified. After the tool execution the user must be informed that only 5 events have been marked for reprocess, because he didn't specify how many. If the user
+    wants to reprocess more he must provide the size.
     Parameters:
     -----------
     job_id: str
@@ -311,12 +314,12 @@ async def reprocess_arcanna_events(request: EventsReprocessingModelRequest):
         End date to filter events older than this date.
         Date format:
           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-    size : int or None
+    size : int or None (default: 5)
         Number of events to include in response.
     page : int or None (page counting starts from 0, default: 0)
         Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
     sort_by_column : str or None
-        The field used to sort events. Defaults to the 'timestamp_inference' field; use the default field unless the user specifies a different one.
+        The field used to sort events. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
     sort_order : str or None
         The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
     filters : list of dict or None
@@ -418,9 +421,14 @@ async def reprocess_arcanna_events(request: EventsReprocessingModelRequest):
 
     Returns:
     --------
-    "OK" if events have successfully been marked for reprocess.
+        Returns:
+    --------
     A dictionary with the following keys:
-        - event_id (str): Unique identifier for the event.
+        - request (dict): Contains information about the request
+            - status: str - Status of the request. "OK" means the events were marked for reprocess successfully
+            - reason: str - In case of an error, contains details about the error
+            - reason_details: str - In case of an error, contains details about the error
+
     """
 
     body = {}
@@ -457,31 +465,29 @@ async def reprocess_arcanna_events(request: EventsReprocessingModelRequest):
 
 
 @handle_exceptions
-async def reprocess_arcanna_events(job_id: str, event_id: str):
+async def reprocess_event_by_id(job_id: int, event_id: str):
     """
     Reprocess an event for a job.
 
     Parameters:
     -----------
-    job_id: str
+    job_id: int
         Unique identifier of the job
     event_id : str or None
         Unique identifier of the event to be marked for reprocess.
 
     Returns:
     --------
-    "OK" if events have successfully been marked for reprocess.
     A dictionary with the following keys:
-        - event_id (str): Unique identifier for the event.
+        - request (dict): Contains information about the request
+            - status: str - Status of the request. "OK" means the event was marked for reprocess successfully
+            - reason: str - In case of an error, contains details about the error
+            - reason_details: str - In case of an error, contains details about the error
     """
 
-    body = {}
-
-    body["job_id"] = job_id
-    body["event_id"] = event_id
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
-    response = requests.post(REPROCESS_EVENT_URL.format(job_id, event_id), json=body, headers=headers)
+    response = requests.post(REPROCESS_EVENT_URL.format(job_id, event_id), headers=headers)
     return response.json()
