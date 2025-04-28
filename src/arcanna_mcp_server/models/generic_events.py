@@ -22,6 +22,17 @@ class QueryEventsRequest(BaseModel):
     filters: List[Filter] = Field(default_factory=list)
 
 
+class EventsReprocessingModelRequest(BaseModel):
+    job_id: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    size: Optional[int] = Field(default=5)
+    page: Optional[int] = Field(default=0, ge=0, description="Page counting starts from 0")
+    sort_by_column: Optional[str] = Field(default="timestamp_inference")
+    sort_order: Optional[str] = Field(default="desc")
+    filters: List[Filter] = Field(default_factory=list)
+
+
 class EventModel(BaseModel):
     event_id: str
     job_id: int
