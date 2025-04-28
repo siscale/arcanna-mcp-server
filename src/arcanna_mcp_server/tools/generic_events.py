@@ -137,7 +137,7 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
     page : int or None (page counting starts from 0, default: 0)
         Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
     sort_by_column : str or None
-        The field used to sort events. Defaults to the 'timestamp_inference' field; use the default field unless the user specifies a different one.
+        The field used to sort events. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
     sort_order : str or None
         The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
     filters : list of dict or None
