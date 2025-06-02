@@ -1,20 +1,88 @@
 import requests
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Union
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.models.generic_events import QueryEventsRequest, EventsModelResponse, EventsReprocessingModelRequest
 from arcanna_mcp_server.models.filters import FilterFieldsRequest, FilterFieldsObject
-from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, \
+from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, ADD_AGENTIC_NOTES_URL, \
     REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL
+
 
 
 def export_tools() -> List[Callable]:
     return [
+        add_agentic_notes,
         query_arcanna_events,
         add_feedback_to_event,
         reprocess_events,
         reprocess_event_by_id
-     ]
+    ]
+
+
+@handle_exceptions
+async def add_agentic_notes(job_id: int, event_id: str, workflow_name: Optional[str] = None,
+                            workflow_id: Optional[Union[str, int]] = None,
+                            session_id: Optional[Union[str, int]] = None, agent_notes: str = "",
+                            agent_saved_objects: dict = None) -> dict:
+    """
+    Add agentic information to an event.
+
+    This endpoint allows adding agent-generated information to an existing event,
+    including agent name, notes, and saved objects.
+
+    Parameters:
+    --------
+    job_id: int
+        Unique identifier of the job
+    event_id: str
+        Unique identifier of the event
+    workflow_name: str, optional
+        Name of the agentic workflow
+    workflow_id: str, optional
+        ID of the workflow
+    session_id: str, optional
+        Session ID of the agentic workflow
+    agent_notes: str
+        Notes from the agent (required)
+    agent_saved_objects: dict, optional
+        Objects saved by the agent (defaults to empty dict if not provided)
+
+    Returns:
+    --------
+    dict
+        A dictionary with the following keys:
+        - status (str): The current status of the operation
+        - reason (str): Short description of the error if one occurred; empty if successful.
+        - reason_details (list): A list of error details if one occurred; empty if successful.
+    """
+
+    if agent_saved_objects is None:
+        agent_saved_objects = {}
+
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "agent_notes": agent_notes,
+        "agent_saved_objects": agent_saved_objects
+    }
+
+    # Add optional fields only if they are provided
+    if workflow_name is not None:
+        payload["workflow_name"] = workflow_name
+    if workflow_id is not None:
+        payload["workflow_id"] = workflow_id
+    if session_id is not None:
+        payload["session_id"] = session_id
+
+    response = requests.post(
+        ADD_AGENTIC_NOTES_URL.format(job_id=str(job_id), event_id=str(event_id)),
+        headers=headers,
+        json=payload
+    )
+    return response.json()
 
 
 @handle_exceptions
@@ -279,7 +347,7 @@ async def query_arcanna_events(request: QueryEventsRequest) -> EventsModelRespon
         body["end_date"] = request.end_date
 
     if request.date_field:
-            body["date_field"] = request.date_field
+        body["date_field"] = request.date_field
 
     if request.page:
         body["page"] = request.page
@@ -294,7 +362,7 @@ async def query_arcanna_events(request: QueryEventsRequest) -> EventsModelRespon
         body["sort_order"] = request.sort_order
 
     if request.filters:
-        body["filters"] =  request.model_dump().get("filters", [])
+        body["filters"] = request.model_dump().get("filters", [])
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
