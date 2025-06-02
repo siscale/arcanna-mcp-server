@@ -37,11 +37,11 @@ async def add_agentic_notes(job_id: int, event_id: str, workflow_name: Optional[
     event_id: str
         Unique identifier of the event
     workflow_name: str, optional
-        Name of the agent
+        Name of the agentic workflow
     workflow_id: str, optional
         ID of the workflow
     session_id: str, optional
-        Session ID for the agentic workflow
+        Session ID of the agentic workflow
     agent_notes: str
         Notes from the agent (required)
     agent_saved_objects: dict, optional
