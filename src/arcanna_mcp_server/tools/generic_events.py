@@ -125,7 +125,7 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
 
 
 @handle_exceptions
-async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_name: Optional[str]) -> dict:
+async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_name: Optional[str] = None) -> dict:
     """
     Provide feedback on a previously ingested event by Arcanna job. The provided feedback will be used to train future AI models
     and make better decisions on new and similar events.
@@ -142,7 +142,7 @@ async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_
         be investigated.
     storage_name: str or None
         Storage name to be used for feedback. Use only if the job have multiple storages defined.
-        If none the feedback will be applied to the latest event with event_id ingested.
+        If none (default) the feedback will be applied to the latest event with event_id ingested.
 
     Returns:
     --------
