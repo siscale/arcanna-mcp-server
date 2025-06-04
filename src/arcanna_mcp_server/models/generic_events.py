@@ -19,7 +19,7 @@ class QueryEventsRequest(BaseModel):
     date_field: Optional[str] = Field(default="@timestamp")
     size: Optional[int] = Field(default=5)
     page: Optional[int] = Field(default=0)
-    sort_by_column: Optional[str] = Field(default="timestamp_inference")
+    sort_by_column: Optional[str] = Field(default="@timestamp")
     sort_order: Optional[Literal['desc', 'asc']] = Field(default="desc")
     filters: Optional[List[Filter]] = Field(default_factory=list)
 
