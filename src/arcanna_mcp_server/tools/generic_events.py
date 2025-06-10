@@ -1,3 +1,4 @@
+import logging
 import requests
 from typing import List, Callable, Optional, Union
 from arcanna_mcp_server.environment import INPUT_API_KEY, MANAGEMENT_API_KEY
@@ -628,11 +629,11 @@ async def transfer_event(source_job_id: int, event_id: Union[int, str],
 
     response = requests.get(EXPORT_EVENT_URL.format(source_job_id, event_id), headers=headers)
     if response.status_code != 200:
-        return TransferEventResponse(status=response.status_code, error_message=response.json())
+        return TransferEventResponse(status="NOK", error_message=response.json())
 
     event_source = response.json().get("arcanna_event")
     if event_source is None:
-        return TransferEventResponse(status=400, error_message=f"'arcanna_event' of event_id {event_id} is empty in source job")
+        return TransferEventResponse(status=f"NOK", error_message=f"'arcanna_event' of event_id {event_id} is empty in source job")
 
     body = {
         "job_id": destination_job_id,
