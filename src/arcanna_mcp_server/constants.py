@@ -24,6 +24,9 @@ FILTER_FIELDS_URL = ARCANNA_HOST + "/api/v2/filters/fields"
 EVENT_FEEDBACK_URL_V2 = ARCANNA_HOST + "/api/v2/events/{}/{}/feedback"
 ADD_AGENTIC_NOTES_URL = ARCANNA_HOST + "/api/v2/events/{job_id}/{event_id}/add_agentic_notes"
 
+INGEST_EVENT_URL = ARCANNA_HOST + "/api/v1/events/"
+EXPORT_EVENT_URL = ARCANNA_HOST + "/api/v1/events/{}/{}/export"
+
 # jobs
 START_JOB_URL = ARCANNA_HOST + "/api/v2/jobs/{}/start"
 STOP_JOB_URL = ARCANNA_HOST + "/api/v2/jobs/{}/stop"
