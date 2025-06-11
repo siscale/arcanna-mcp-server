@@ -1,9 +1,9 @@
 import requests
-from typing import List, Callable, Optional, Union
+from typing import List, Callable, Optional, Union, Literal
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
-from arcanna_mcp_server.models.generic_events import QueryEventsRequest, EventsModelResponse, EventsReprocessingModelRequest
-from arcanna_mcp_server.models.filters import FilterFieldsRequest, FilterFieldsObject
+from arcanna_mcp_server.models.generic_events import EventsModelResponse
+from arcanna_mcp_server.models.filters import FilterFieldsObject
 from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, ADD_AGENTIC_NOTES_URL, \
     REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL
 
@@ -86,7 +86,9 @@ async def add_agentic_notes(job_id: int, event_id: str, workflow_name: Optional[
 
 
 @handle_exceptions
-async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsObject]:
+async def get_filter_fields(job_ids: Optional[Union[List[int], int]] = None,
+                            job_titles: Optional[Union[List[str], str]] = None
+                            ) -> List[FilterFieldsObject]:
     """
     Used to get available fields with available operators and the jobs where the fields are available.
     If neither job_ids nor job_titles are provided, the search will include fields across all jobs.
@@ -94,12 +96,10 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
 
     Parameters:
     -----------
-    request: {
-        job_ids : int or list of int or None
-            Job IDs to filter on.
-        job_titles : str or list of str or None
-            Job titles to filter on.
-    }
+    job_ids : int or list of int or None
+        Job IDs to filter on.
+    job_titles : str or list of str or None
+        Job titles to filter on.
     Returns:
     --------
     list of dictionary
@@ -110,11 +110,11 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
     """
     body = {}
 
-    if request.job_ids:
-        body["job_ids"] = request.job_ids
+    if job_ids:
+        body["job_ids"] = job_ids
 
-    if request.job_titles:
-        body["job_titles"] = request.job_titles
+    if job_titles:
+        body["job_titles"] = job_titles
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
@@ -174,7 +174,20 @@ async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_
 
 
 @handle_exceptions
-async def query_arcanna_events(request: QueryEventsRequest) -> EventsModelResponse:
+async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
+                               job_titles: Optional[Union[List[str], str]] = None,
+                               event_ids: Optional[Union[List[str], str]] = None,
+                               decision_points_only: Optional[bool] = False,
+                               count_results_only: Optional[bool] = False,
+                               start_date: Optional[str] = None,
+                               end_date: Optional[str] = None,
+                               date_field: Optional[str] = "@timestamp",
+                               size: Optional[int] = 5,
+                               page: Optional[int] = 0,
+                               sort_by_column: Optional[str] = "@timestamp",
+                               sort_order: Optional[Literal['desc', 'asc']] = "desc",
+                               filters: Optional[List[dict]] = None
+                               ) -> EventsModelResponse:
     """
     Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria (size, start_date, end_date, filters).
     At least one of 'job_ids', 'job_titles', 'event_ids', 'size', 'filters', 'start_date', or 'end_date' must be provided.
@@ -185,42 +198,41 @@ async def query_arcanna_events(request: QueryEventsRequest) -> EventsModelRespon
 
     Parameters:
     -----------
-    request: {
-        job_ids : int or list of int or None
-            Job IDs to filter on.
-        job_titles : str or list of str or None
-            Job titles to filter on.
-        event_ids : str or list of str or None
-            Events IDs to filter on.
-        decision_points_only : bool or None
-             If set to true, only decision points will be included in the events response, excluding the full event.
-        count_results_only : bool or None
-             If set to true, only the total count of events will be returned, and no events.
-        start_date : str or None
-            Start date to filter events newer than this date.
-            Date format:
-              - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-        end_date : str or None
-            End date to filter events older than this date.
-            Date format:
-              - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-        date_field : str or None
-            The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
-        size : int or None
-            Number of events to include in response. If job_ids or job_titles provided it is the number of events per job.
-        page : int or None (page counting starts from 0, default: 0)
-            Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
-        sort_by_column : str or None
-            The field used to sort events. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
-        sort_order : str or None
-            The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
-        filters : list of dict or None
-          Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
-          Each filter in list is a dictionary with keys: "field", "operator" and "value"
-          - field - the field to apply filters to
-          - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
-          - value to filter by, value is omitted for operators "exists" and "not exists"
-    }
+    job_ids : int or list of int or None
+        Job IDs to filter on.
+    job_titles : str or list of str or None
+        Job titles to filter on.
+    event_ids : str or list of str or None
+        Events IDs to filter on.
+    decision_points_only : bool or None
+         If set to true, only decision points will be included in the events response, excluding the full event.
+    count_results_only : bool or None
+         If set to true, only the total count of events will be returned, and no events.
+    start_date : str or None
+        Start date to filter events newer than this date.
+        Date format:
+          - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
+    end_date : str or None
+        End date to filter events older than this date.
+        Date format:
+          - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
+    date_field : str or None
+        The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
+    size : int or None
+        Number of events to include in response. If job_ids or job_titles provided it is the number of events per job.
+    page : int or None (page counting starts from 0, default: 0)
+        Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
+    sort_by_column : str or None
+        The field used to sort events. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
+    sort_order : str or None
+        The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
+    filters : list of dict or None
+      Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
+      Each filter in list is a dictionary with keys: "field", "operator" and "value"
+      - field - the field to apply filters to
+      - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
+      - value to filter by, value is omitted for operators "exists" and "not exists"
+
         Arcanna fields:
             1. Arcanna decision field = "arcanna.result_label"
             2. Arcanna consensus field = "arcanna.consensus"
@@ -325,44 +337,44 @@ async def query_arcanna_events(request: QueryEventsRequest) -> EventsModelRespon
 
     body = {}
 
-    if request.job_ids:
-        body["job_ids"] = request.job_ids
+    if job_ids:
+        body["job_ids"] = job_ids
 
-    if request.job_titles:
-        body["job_titles"] = request.job_titles
+    if job_titles:
+        body["job_titles"] = job_titles
 
-    if request.event_ids:
-        body["event_ids"] = request.event_ids
+    if event_ids:
+        body["event_ids"] = event_ids
 
-    if request.decision_points_only:
-        body["decision_points_only"] = request.decision_points_only
+    if decision_points_only:
+        body["decision_points_only"] = decision_points_only
 
-    if request.count_results_only:
-        body["count_results_only"] = request.count_results_only
+    if count_results_only:
+        body["count_results_only"] = count_results_only
 
-    if request.start_date:
-        body["start_date"] = request.start_date
+    if start_date:
+        body["start_date"] = start_date
 
-    if request.end_date:
-        body["end_date"] = request.end_date
+    if end_date:
+        body["end_date"] = end_date
 
-    if request.date_field:
-        body["date_field"] = request.date_field
+    if date_field:
+        body["date_field"] = date_field
 
-    if request.page:
-        body["page"] = request.page
+    if page:
+        body["page"] = page
 
-    if request.size:
-        body["size"] = request.size
+    if size:
+        body["size"] = size
 
-    if request.sort_by_column:
-        body["sort_by_column"] = request.sort_by_column
+    if sort_by_column:
+        body["sort_by_column"] = sort_by_column
 
-    if request.sort_order:
-        body["sort_order"] = request.sort_order
+    if sort_order:
+        body["sort_order"] = sort_order
 
-    if request.filters:
-        body["filters"] = request.model_dump().get("filters", [])
+    if filters:
+        body["filters"] = filters
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
@@ -373,7 +385,10 @@ async def query_arcanna_events(request: QueryEventsRequest) -> EventsModelRespon
 
 
 @handle_exceptions
-async def reprocess_events(request: EventsReprocessingModelRequest):
+async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None,
+                           size: Optional[int] = 5, page: Optional[int] = 0, sort_by_column: Optional[str] = "@timestamp",
+                           sort_order: Optional[str] = "desc", filters: Optional[List[dict]] = None
+):
     """
     Reprocess events filtered by specific filtering criteria (size, start_date, end_date, filters) for a specific job_id.
     When working with timestamps: the '@timestamp' field represents the original alert/event timestamp, while the 'timestamp_inference' field represents the time it was ingested into Arcanna.
@@ -381,7 +396,6 @@ async def reprocess_events(request: EventsReprocessingModelRequest):
     wants to reprocess more he must provide the size.
     Parameters:
     -----------
-    request: {
         job_id: str
             Unique identifier of the job
         start_date : str or None
@@ -406,7 +420,7 @@ async def reprocess_events(request: EventsReprocessingModelRequest):
           - field - the field to apply filters to
           - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
           - value to filter by, value is omitted for operators "exists" and "not exists"
-    }
+
         Arcanna fields:
             1. Arcanna decision field = "arcanna.result_label"
             2. Arcanna consensus field = "arcanna.consensus"
@@ -511,28 +525,28 @@ async def reprocess_events(request: EventsReprocessingModelRequest):
 
     body = {}
 
-    job_id = request.job_id
+    job_id = job_id
 
-    if request.start_date:
-        body["start_date"] = request.start_date
+    if start_date:
+        body["start_date"] = start_date
 
-    if request.end_date:
-        body["end_date"] = request.end_date
+    if end_date:
+        body["end_date"] = end_date
 
-    if request.page:
-        body["page"] = request.page
+    if page:
+        body["page"] = page
 
-    if request.size:
-        body["size"] = request.size
+    if size:
+        body["size"] = size
 
-    if request.sort_by_column:
-        body["sort_by_column"] = request.sort_by_column
+    if sort_by_column:
+        body["sort_by_column"] = sort_by_column
 
-    if request.sort_order:
-        body["sort_order"] = request.sort_order
+    if sort_order:
+        body["sort_order"] = sort_order
 
-    if request.filters:
-        body["filters"] = request.model_dump().get("filters", [])
+    if filters:
+        body["filters"] = filters
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
