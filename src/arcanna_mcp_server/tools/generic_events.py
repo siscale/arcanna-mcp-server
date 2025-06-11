@@ -2,9 +2,8 @@ import requests
 from typing import List, Callable, Optional, Union, Literal
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
-from arcanna_mcp_server.models.generic_events import QueryEventsRequest, EventsModelResponse, \
-    EventsReprocessingModelRequest, Filter
-from arcanna_mcp_server.models.filters import FilterFieldsRequest, FilterFieldsObject
+from arcanna_mcp_server.models.generic_events import EventsModelResponse
+from arcanna_mcp_server.models.filters import FilterFieldsObject
 from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, ADD_AGENTIC_NOTES_URL, \
     REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL
 
@@ -87,7 +86,9 @@ async def add_agentic_notes(job_id: int, event_id: str, workflow_name: Optional[
 
 
 @handle_exceptions
-async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsObject]:
+async def get_filter_fields(job_ids: Optional[Union[List[int], int]] = None,
+                            job_titles: Optional[Union[List[str], str]] = None
+                            ) -> List[FilterFieldsObject]:
     """
     Used to get available fields with available operators and the jobs where the fields are available.
     If neither job_ids nor job_titles are provided, the search will include fields across all jobs.
@@ -95,12 +96,10 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
 
     Parameters:
     -----------
-    request: {
-        job_ids : int or list of int or None
-            Job IDs to filter on.
-        job_titles : str or list of str or None
-            Job titles to filter on.
-    }
+    job_ids : int or list of int or None
+        Job IDs to filter on.
+    job_titles : str or list of str or None
+        Job titles to filter on.
     Returns:
     --------
     list of dictionary
@@ -111,11 +110,11 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
     """
     body = {}
 
-    if request.job_ids:
-        body["job_ids"] = request.job_ids
+    if job_ids:
+        body["job_ids"] = job_ids
 
-    if request.job_titles:
-        body["job_titles"] = request.job_titles
+    if job_titles:
+        body["job_titles"] = job_titles
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
@@ -187,7 +186,7 @@ async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
                                page: Optional[int] = 0,
                                sort_by_column: Optional[str] = "@timestamp",
                                sort_order: Optional[Literal['desc', 'asc']] = "desc",
-                               filters: Optional[List[Filter]] = None
+                               filters: Optional[List[dict]] = None
                                ) -> EventsModelResponse:
     """
     Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria (size, start_date, end_date, filters).
@@ -375,7 +374,7 @@ async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
         body["sort_order"] = sort_order
 
     if filters:
-        body["filters"] = list(map(lambda x: x.model_dump(), filters))
+        body["filters"] = filters
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
@@ -386,7 +385,10 @@ async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
 
 
 @handle_exceptions
-async def reprocess_events(request: EventsReprocessingModelRequest):
+async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None,
+                           size: Optional[int] = 5, page: Optional[int] = 0, sort_by_column: Optional[str] = "@timestamp",
+                           sort_order: Optional[str] = "desc", filters: Optional[List[dict]] = None
+):
     """
     Reprocess events filtered by specific filtering criteria (size, start_date, end_date, filters) for a specific job_id.
     When working with timestamps: the '@timestamp' field represents the original alert/event timestamp, while the 'timestamp_inference' field represents the time it was ingested into Arcanna.
@@ -394,7 +396,6 @@ async def reprocess_events(request: EventsReprocessingModelRequest):
     wants to reprocess more he must provide the size.
     Parameters:
     -----------
-    request: {
         job_id: str
             Unique identifier of the job
         start_date : str or None
@@ -419,7 +420,7 @@ async def reprocess_events(request: EventsReprocessingModelRequest):
           - field - the field to apply filters to
           - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
           - value to filter by, value is omitted for operators "exists" and "not exists"
-    }
+
         Arcanna fields:
             1. Arcanna decision field = "arcanna.result_label"
             2. Arcanna consensus field = "arcanna.consensus"
@@ -524,28 +525,28 @@ async def reprocess_events(request: EventsReprocessingModelRequest):
 
     body = {}
 
-    job_id = request.job_id
+    job_id = job_id
 
-    if request.start_date:
-        body["start_date"] = request.start_date
+    if start_date:
+        body["start_date"] = start_date
 
-    if request.end_date:
-        body["end_date"] = request.end_date
+    if end_date:
+        body["end_date"] = end_date
 
-    if request.page:
-        body["page"] = request.page
+    if page:
+        body["page"] = page
 
-    if request.size:
-        body["size"] = request.size
+    if size:
+        body["size"] = size
 
-    if request.sort_by_column:
-        body["sort_by_column"] = request.sort_by_column
+    if sort_by_column:
+        body["sort_by_column"] = sort_by_column
 
-    if request.sort_order:
-        body["sort_order"] = request.sort_order
+    if sort_order:
+        body["sort_order"] = sort_order
 
-    if request.filters:
-        body["filters"] = request.model_dump().get("filters", [])
+    if filters:
+        body["filters"] = filters
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
