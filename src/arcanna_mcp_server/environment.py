@@ -2,8 +2,6 @@ import os
 
 
 MANAGEMENT_API_KEY = os.getenv("ARCANNA_MANAGEMENT_API_KEY")
-# TODO: Remove
-INPUT_API_KEY = "QiNMkXiTf3cjffuh_1i8Km_8kddfLuHzq_N5XwCGUNmSoYk6uZN3HAH6PEd3BUkKEaDTs-EQQmLWzoyf6e85iw"
 ARCANNA_HOST = os.getenv("ARCANNA_HOST", "")
 TRANSPORT_MODE = os.getenv("TRANSPORT_MODE", "stdio")
 

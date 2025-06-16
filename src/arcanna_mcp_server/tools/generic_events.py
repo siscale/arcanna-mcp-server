@@ -1,7 +1,7 @@
 import logging
 import requests
 from typing import List, Callable, Optional, Union
-from arcanna_mcp_server.environment import INPUT_API_KEY, MANAGEMENT_API_KEY
+from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.models.generic_events import (
   QueryEventsRequest, EventsModelResponse, EventsReprocessingModelRequest, TransferEventResponse
@@ -596,7 +596,7 @@ async def export_event_by_id(job_id: int, event_id: Union[int, str]) -> dict:
     The event ingested by the job in JSON format.
     """
     headers = {
-        "x-arcanna-api-key": INPUT_API_KEY,
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content_Type": "application/json"
     }
 
@@ -623,7 +623,7 @@ async def transfer_event(source_job_id: int, event_id: Union[int, str],
         from wich input integration the event is sent.
     """
     headers = {
-        "x-arcanna-api-key": INPUT_API_KEY,
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content_Type": "application/json"
     }
 
