@@ -9,5 +9,7 @@ def handle_exceptions(func):
         try:
             return await func(*args, **kwargs)
         except ValueError:
-            return ToolExceptionResponse(status_code=500, error_message="API internal server error").to_dict()
+            return ToolExceptionResponse(status_code=500, error_message="ValueError. MCP server internal error").to_dict()
+        except Exception as e:
+            return ToolExceptionResponse(status_code=500, error_message=str(e)).to_dict()
     return wrapper
