@@ -246,7 +246,7 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
         1). Decision intelligence job with an External REST API input and an Elasticsearch output.
 
         Request:
-       {
+        {
            "resources":
             {
                 "Api Key": {
