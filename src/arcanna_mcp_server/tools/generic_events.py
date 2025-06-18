@@ -1,5 +1,5 @@
 import requests
-from typing import List, Callable, Optional, Union
+from typing import List, Callable, Literal, Optional, Union
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.models.generic_events import EventsModelResponse, TransferEventResponse
