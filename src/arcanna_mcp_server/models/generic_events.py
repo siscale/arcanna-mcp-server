@@ -21,3 +21,11 @@ class EventModel(BaseModel):
 class EventsModelResponse(BaseModel):
     events: List[EventModel] = Field(default_factory=list)
     total_count: int
+
+
+class TransferEventResponse(BaseModel):
+    event_id: Optional[Union[str, int]] = Field(default=None)
+    job_id: Optional[int] = Field(default=None)
+    ingest_timestamp: str = Field(default=None)
+    status: Optional[str] = Field(default=None)
+    error_message: Optional[str] = Field(default=None)

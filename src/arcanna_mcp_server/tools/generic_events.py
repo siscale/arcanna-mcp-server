@@ -1,11 +1,13 @@
 import requests
-from typing import List, Callable, Optional, Union, Literal
+from typing import List, Callable, Literal, Optional, Union
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
-from arcanna_mcp_server.models.generic_events import EventsModelResponse
+from arcanna_mcp_server.models.generic_events import EventsModelResponse, TransferEventResponse
 from arcanna_mcp_server.models.filters import FilterFieldsObject
-from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, ADD_AGENTIC_NOTES_URL, \
-    REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL
+from arcanna_mcp_server.constants import (
+    EXPORT_EVENT_URL, INGEST_EVENT_URL, QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, \
+    ADD_AGENTIC_NOTES_URL, REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL
+)
 
 
 
@@ -15,12 +17,14 @@ def export_tools() -> List[Callable]:
         query_arcanna_events,
         add_feedback_to_event,
         reprocess_events,
-        reprocess_event_by_id
+        reprocess_event_by_id,
+        export_event_by_id,
+        transfer_event
     ]
 
 
 @handle_exceptions
-async def add_agentic_notes(job_id: int, event_id: str, workflow_name: Optional[str] = None,
+async def add_agentic_notes(job_id: int, event_id: Union[str, int], workflow_name: Optional[str] = None,
                             workflow_id: Optional[Union[str, int]] = None,
                             session_id: Optional[Union[str, int]] = None, agent_notes: str = "",
                             agent_saved_objects: dict = None) -> dict:
@@ -34,7 +38,7 @@ async def add_agentic_notes(job_id: int, event_id: str, workflow_name: Optional[
     --------
     job_id: int
         Unique identifier of the job
-    event_id: str
+    event_id: str or int
         Unique identifier of the event
     workflow_name: str, optional
         Name of the agentic workflow
@@ -125,7 +129,7 @@ async def get_filter_fields(job_ids: Optional[Union[List[int], int]] = None,
 
 
 @handle_exceptions
-async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_name: Optional[str] = None) -> dict:
+async def add_feedback_to_event(job_id: int, event_id: Union[str, int], label: str, storage_name: Optional[str] = None) -> dict:
     """
     Provide feedback on a previously ingested event by Arcanna job. The provided feedback will be used to train future AI models
     and make better decisions on new and similar events.
@@ -134,7 +138,7 @@ async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_
     -----------
     job_id : int
         Unique identifier for the job.
-    event_id : dict
+    event_id : str or int
         Unique identifier of the event you want to provide feedback for.
     label: str
         Decision label to be applied for the event. Can be for example Escalate or Drop. Escalate means that the user considers
@@ -582,4 +586,72 @@ async def reprocess_event_by_id(job_id: int, event_id: str):
         "Content-Type": "application/json"
     }
     response = requests.post(REPROCESS_EVENT_URL.format(job_id, event_id), headers=headers)
+    return response.json()
+
+
+@handle_exceptions
+async def export_event_by_id(job_id: int, event_id: Union[int, str]) -> dict:
+    """
+    Export the full definition of an event from a job in JSON format.
+
+    Parameters:
+    -----------
+    job_id: int
+        Unique identifier of the job
+    event_id: str or int
+        Unique identifier of the event to be exported
+    -----------
+
+    Returns:
+    -----------
+    The event ingested by the job in JSON format.
+    """
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content_Type": "application/json"
+    }
+
+    response = requests.get(EXPORT_EVENT_URL.format(job_id, event_id), headers=headers)
+    return response.json()
+
+@handle_exceptions
+async def transfer_event(source_job_id: int, event_id: Union[int, str],
+                         destination_job_id: int, destination_storage_tag_name: Optional[str] = None) -> TransferEventResponse:
+    """
+    Transfer an event identified by its id from a source job to a new destination job.
+    Event will still exist in the source job. It will be send as a copy to the destination job.
+
+    Parameters:
+    -----------
+    source_job_id: int
+        Unique identifier of the job where the event is stored initially.
+    event_id: str or int
+        Unique identifier of the event to be transfered. This is located in the source job.
+    destination_job_id: int
+        Unique identifier of the job where the event will be stored after transfer.
+    destination_storage_tag_name: string or None
+        In case the destination job is configured as a multi-input job the storage_tag will specify
+        from wich input integration the event is sent.
+    """
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content_Type": "application/json"
+    }
+
+    response = requests.get(EXPORT_EVENT_URL.format(source_job_id, event_id), headers=headers)
+    if response.status_code != 200:
+        return TransferEventResponse(status="NOK", error_message=response.json())
+
+    event_source = response.json().get("arcanna_event")
+    if event_source is None:
+        return TransferEventResponse(status=f"NOK", error_message=f"Event with id {event_id} not found in source job with id {source_job_id}")
+
+    body = {
+        "job_id": destination_job_id,
+        "raw_body": event_source
+    }
+    if destination_storage_tag_name is not None:
+        body["storage_tag"] = destination_storage_tag_name
+
+    response = requests.post(INGEST_EVENT_URL, json=body, headers=headers)
     return response.json()
