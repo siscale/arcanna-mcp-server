@@ -1,4 +1,4 @@
-from arcanna_mcp_server.environment import ARCANNA_HOST
+from arcanna_mcp_server.environment import ARCANNA_HOST, ARCANNA_AGENTS_HOST
 
 # healthcheck
 HEALTH_CHECK_URL = ARCANNA_HOST + "/api/v2/health/"
@@ -37,3 +37,7 @@ METRICS_JOB_URL = ARCANNA_HOST + "/api/v2/metrics/job"
 METRICS_JOB_AND_LATEST_MODEL_URL = ARCANNA_HOST + "/api/v2/metrics/job_and_latest_model"
 METRICS_MODEL_URL = ARCANNA_HOST + "/api/v2/metrics/model"
 METRICS_MODEL_URL_REQUEST_RECOMPUTE_METRICS = ARCANNA_HOST + "/api/v2/metrics/model/request_recompute_metrics"
+
+# agentic workflows
+LIST_WORKFLOWS_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/list"
+RUN_WORKFLOW_BY_ID_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/run/{}"
