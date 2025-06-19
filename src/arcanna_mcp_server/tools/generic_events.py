@@ -644,7 +644,7 @@ async def transfer_event(source_job_id: int, event_id: Union[int, str],
 
     event_source = response.json().get("arcanna_event")
     if event_source is None:
-        return TransferEventResponse(status=f"NOK", error_message=f"'arcanna_event' of event_id {event_id} is empty in source job")
+        return TransferEventResponse(status=f"NOK", error_message=f"Event with id {event_id} not found in source job with id {source_job_id}")
 
     body = {
         "job_id": destination_job_id,
