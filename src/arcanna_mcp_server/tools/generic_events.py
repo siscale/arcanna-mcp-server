@@ -388,7 +388,7 @@ async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
 
 
 @handle_exceptions
-async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None,
+async def reprocess_events(job_id: Union[str, int], start_date: Optional[str] = None, end_date: Optional[str] = None,
                            date_field: Optional[str] = "@timestamp", filters: Optional[List[dict]] = None):
     """
     Reprocess events filtered by specific filtering criteria (start_date, end_date, filters) for a specific job_id.
@@ -513,7 +513,7 @@ async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_da
             - status: str - Status of the request. "OK" means the events were marked for reprocess successfully
             - reason: str - In case of an error, contains details about the error
             - reason_details: str - In case of an error, contains details about the error
-
+        - events_updated (int): Number of events marked for reprocessing.
     """
 
     body = {}
@@ -536,7 +536,7 @@ async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_da
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
-    response = requests.post(REPROCESS_EVENTS_URL.format(job_id), json=body, headers=headers)
+    response = requests.post(REPROCESS_EVENTS_URL.format(str(job_id)), json=body, headers=headers)
     return response.json()
 
 
