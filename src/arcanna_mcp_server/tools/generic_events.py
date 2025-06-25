@@ -10,7 +10,6 @@ from arcanna_mcp_server.constants import (
 )
 
 
-
 def export_tools() -> List[Callable]:
     return [
         add_agentic_notes,
@@ -389,15 +388,11 @@ async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
 
 
 @handle_exceptions
-async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_date: Optional[str] = None,
-                           size: Optional[int] = 5, page: Optional[int] = 0, sort_by_column: Optional[str] = "@timestamp",
-                           sort_order: Optional[str] = "desc", filters: Optional[List[dict]] = None
-):
+async def reprocess_events(job_id: Union[str, int], start_date: Optional[str] = None, end_date: Optional[str] = None,
+                           date_field: Optional[str] = "@timestamp", filters: Optional[List[dict]] = None):
     """
-    Reprocess events filtered by specific filtering criteria (size, start_date, end_date, filters) for a specific job_id.
+    Reprocess events filtered by specific filtering criteria (start_date, end_date, filters) for a specific job_id.
     When working with timestamps: the '@timestamp' field represents the original alert/event timestamp, while the 'timestamp_inference' field represents the time it was ingested into Arcanna.
-    The default size is 5 if not specified. After the tool execution the user must be informed that only 5 events have been marked for reprocess, because he didn't specify how many. If the user
-    wants to reprocess more he must provide the size.
     Parameters:
     -----------
         job_id: str
@@ -410,14 +405,8 @@ async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_da
             End date to filter events older than this date.
             Date format:
               - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-        size : int or None (default: 5)
-            Number of events to include in response.
-        page : int or None (page counting starts from 0, default: 0)
-            Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
-        sort_by_column : str or None
-            The field used to sort events. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
-        sort_order : str or None
-            The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
+        date_field : str or None
+            The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
         filters : list of dict or None
           Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
           Each filter in list is a dictionary with keys: "field", "operator" and "value"
@@ -524,7 +513,7 @@ async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_da
             - status: str - Status of the request. "OK" means the events were marked for reprocess successfully
             - reason: str - In case of an error, contains details about the error
             - reason_details: str - In case of an error, contains details about the error
-
+        - events_updated (int): Number of events marked for reprocessing.
     """
 
     body = {}
@@ -537,17 +526,8 @@ async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_da
     if end_date:
         body["end_date"] = end_date
 
-    if page:
-        body["page"] = page
-
-    if size:
-        body["size"] = size
-
-    if sort_by_column:
-        body["sort_by_column"] = sort_by_column
-
-    if sort_order:
-        body["sort_order"] = sort_order
+    if date_field:
+        body["date_field"] = date_field
 
     if filters:
         body["filters"] = filters
@@ -556,7 +536,7 @@ async def reprocess_events(job_id: str, start_date: Optional[str] = None, end_da
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
-    response = requests.post(REPROCESS_EVENTS_URL.format(job_id), json=body, headers=headers)
+    response = requests.post(REPROCESS_EVENTS_URL.format(str(job_id)), json=body, headers=headers)
     return response.json()
 
 
@@ -613,6 +593,7 @@ async def export_event_by_id(job_id: int, event_id: Union[int, str]) -> dict:
 
     response = requests.get(EXPORT_EVENT_URL.format(job_id, event_id), headers=headers)
     return response.json()
+
 
 @handle_exceptions
 async def transfer_event(source_job_id: int, event_id: Union[int, str],
