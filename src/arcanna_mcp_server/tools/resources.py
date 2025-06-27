@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Literal
+from typing import Callable, Dict, List, Optional, Literal, Union
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.constants import INTEGRATION_PARAMETERS_SCHEMA_URL, RESOURCES_CRUD_URL
 from arcanna_mcp_server.models.base_resource import BaseResource
@@ -394,7 +394,7 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
 
 
 async def get_resources(
-        resource_type: Optional[Literal[ResourceType.API_KEY, ResourceType.INTEGRATION, ResourceType.JOB]] = None, title: Optional[str] = None, id: Optional[str] = None) -> Dict:
+        resource_type: Optional[Literal[ResourceType.API_KEY, ResourceType.INTEGRATION, ResourceType.JOB]] = None, title: Optional[str] = None, id: Optional[Union[str, int]] = None) -> Dict:
     """
         Returns a list of resources. Parameters behave as filters.
         If no parameter is provided all available resources from arcanna are returned. Information about jobs/use cases
@@ -431,7 +431,7 @@ async def get_resources(
 
 
 async def delete_resources(
-        resource_type: Literal[ResourceType.API_KEY, ResourceType.INTEGRATION, ResourceType.JOB], title: Optional[str] = None, id: Optional[str] = None) -> Dict:
+        resource_type: Literal[ResourceType.API_KEY, ResourceType.INTEGRATION, ResourceType.JOB], title: Optional[str] = None, id: Optional[Union[str, int]] = None) -> Dict:
     """
         Returns a list of resources. Parameters behave as filters.
         If no parameter is provided all available resources from arcanna are returned.
