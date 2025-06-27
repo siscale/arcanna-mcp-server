@@ -424,7 +424,7 @@ async def get_resources(
     if title:
         params["title"] = title
     elif id:
-        params["id"] = id
+        params["id"] = str(id)
 
     response = requests.get(RESOURCES_CRUD_URL, headers=headers, params=params)
     return response.json()
@@ -458,7 +458,7 @@ async def delete_resources(
     if title:
         params["title"] = title
     elif id:
-        params["id"] = id
+        params["id"] = str(id)
 
     response = requests.delete(RESOURCES_CRUD_URL, headers=headers, params=params)
     return response.json()
