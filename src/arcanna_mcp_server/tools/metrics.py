@@ -16,7 +16,7 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
-async def metrics_job(job_id: int, start_date: str=None, end_date: str=None) -> GetJobMetricsResponse:
+async def metrics_job(job_id: int, start_date: str=None, end_date: str=None, filters:list=None) -> GetJobMetricsResponse:
     """
         Fetches the metrics associated with a specific Arcanna job.
         No date range means all time metrics are fetched.
@@ -31,6 +31,102 @@ async def metrics_job(job_id: int, start_date: str=None, end_date: str=None) -> 
         Start date to filter events newer than this date.
         Date format:
           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
+    filters : list of dict or None
+      Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
+      Each filter in list is a dictionary with keys: "field", "operator" and "value"
+      - field - the field to apply filters to
+      - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
+      - value to filter by, value is omitted for operators "exists" and "not exists"
+
+        Arcanna fields:
+            1. Arcanna decision field = "arcanna.result_label"
+            2. Arcanna consensus field = "arcanna.consensus"
+            3. Arcanna outlier field flag = "arcanna.outlier_flag"
+            4. Arcanna in model status field = "arcanna.knowledge_base_state" or "arcanna.bucket_state"
+            5. Arcanna low confidence warning flag field = "attention.low_confidence_score.attention_required"
+            6. Arcanna undecided warning flag field = "attention.undecided_consensus.attention_required"
+
+        Predefined filters:
+         1. Query outlier events:
+            {{
+                "filters": [{{
+                    "field": "arcanna.outlier_flag",
+                    "operator": "is",
+                    "value": true
+                    }}]
+            }}
+         2. Query events with low confidence score:
+            {{
+                "filters": [{{
+                    "field": "arcanna.attention.low_confidence_score.attention_required",
+                    "operator": "is",
+                    "value": true
+                    }}]
+            }}
+         3. Query events with undecided consensus:
+            {{
+                "filters": [{{
+                    "field": "arcanna.attention.undecided_consensus.attention_required",
+                    "operator": "is",
+                    "value": true
+                    }}]
+            }}
+         4. Query events with any feedback (Event Centric Decision Intelligence job):
+            {{
+                "filters": [{{
+                    "field": "arcanna.knowledge_base_state",
+                    "operator": "is",
+                    "value": "new"
+                    }}]
+            }}
+         5. Query events without any feedback (Event Centric Decision Intelligence job):
+            {{
+                "filters": [{{
+                    "field": "arcanna.knowledge_base_state",
+                    "operator": "is not",
+                    "value": "new"
+                    }}]
+            }}
+         6. Query events with any feedback (Decision Intelligence job):
+            {{
+                "filters": [{{
+                    "field": "arcanna.bucket_state",
+                    "operator": "is",
+                    "value": "new"
+                    }}]
+            }}
+         7. Query events without any feedback (Decision Intelligence job):
+            {{
+                "filters": [{{
+                    "field": "arcanna.bucket_state",
+                    "operator": "is not",
+                    "value": "new"
+                    }}]
+            }}
+         8. Query events marked as 'Escalate' or 'Investigate' by Arcanna:
+            {{
+                "filters": [{{
+                    "field": "arcanna.result_label",
+                    "operator": "is one of",
+                    "value": ['Escalate', 'Investigate']
+                    }}]
+            }}
+         9. Query events not marked as 'Drop' or 'Low priority' by Arcanna:
+            {{
+                "filters": [{{
+                    "field": "arcanna.result_label",
+                    "operator": "is not one of",
+                    "value": ['Drop', 'Low priority']
+                    }}]
+            }}
+         10. Query events with consensus 'Escalate' or 'Drop':
+            {{
+            "filters": [{{
+                "field": "arcanna.consensus",
+                "operator": "is one of",
+                "value": ['Escalate', 'Drop']
+                }}]
+            }}
     Returns:
     --------
     dict - A dictionary containing the metrics associated with the job:
@@ -55,18 +151,126 @@ async def metrics_job(job_id: int, start_date: str=None, end_date: str=None) -> 
     if end_date:
         formatted_url += f'&end_datetime={end_date}'
 
-    response = requests.get(formatted_url.format(job_id), headers=headers)
+    payload = {}
+    if filters:
+        payload = {"filters": filters}
+
+    response = requests.post(formatted_url.format(job_id), headers=headers, json=payload)
     return response.json()
 
 
 @handle_exceptions
-async def metrics_job_and_latest_model(job_id: int) -> GetJobAndLatestModelMetricsResponse:
+async def metrics_job_and_latest_model(job_id: int, start_date: str=None, end_date: str=None, filters:list=None) -> GetJobAndLatestModelMetricsResponse:
     """
         Fetches the metrics associated with a specific Arcanna job and its active model.
         As part of the request, the metrics of the model will be also recomputed and updated.
     Parameters:
     --------
     job_id: Unique identifier of the job
+    start_date : str or None
+        Start date to filter events newer than this date.
+        Date format:
+          - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
+    end_date : str or None
+        Start date to filter events newer than this date.
+        Date format:
+          - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
+    filters : list of dict or None
+      Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
+      Each filter in list is a dictionary with keys: "field", "operator" and "value"
+      - field - the field to apply filters to
+      - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
+      - value to filter by, value is omitted for operators "exists" and "not exists"
+
+        Arcanna fields:
+            1. Arcanna decision field = "arcanna.result_label"
+            2. Arcanna consensus field = "arcanna.consensus"
+            3. Arcanna outlier field flag = "arcanna.outlier_flag"
+            4. Arcanna in model status field = "arcanna.knowledge_base_state" or "arcanna.bucket_state"
+            5. Arcanna low confidence warning flag field = "attention.low_confidence_score.attention_required"
+            6. Arcanna undecided warning flag field = "attention.undecided_consensus.attention_required"
+
+        Predefined filters:
+         1. Query outlier events:
+            {{
+                "filters": [{{
+                    "field": "arcanna.outlier_flag",
+                    "operator": "is",
+                    "value": true
+                    }}]
+            }}
+         2. Query events with low confidence score:
+            {{
+                "filters": [{{
+                    "field": "arcanna.attention.low_confidence_score.attention_required",
+                    "operator": "is",
+                    "value": true
+                    }}]
+            }}
+         3. Query events with undecided consensus:
+            {{
+                "filters": [{{
+                    "field": "arcanna.attention.undecided_consensus.attention_required",
+                    "operator": "is",
+                    "value": true
+                    }}]
+            }}
+         4. Query events with any feedback (Event Centric Decision Intelligence job):
+            {{
+                "filters": [{{
+                    "field": "arcanna.knowledge_base_state",
+                    "operator": "is",
+                    "value": "new"
+                    }}]
+            }}
+         5. Query events without any feedback (Event Centric Decision Intelligence job):
+            {{
+                "filters": [{{
+                    "field": "arcanna.knowledge_base_state",
+                    "operator": "is not",
+                    "value": "new"
+                    }}]
+            }}
+         6. Query events with any feedback (Decision Intelligence job):
+            {{
+                "filters": [{{
+                    "field": "arcanna.bucket_state",
+                    "operator": "is",
+                    "value": "new"
+                    }}]
+            }}
+         7. Query events without any feedback (Decision Intelligence job):
+            {{
+                "filters": [{{
+                    "field": "arcanna.bucket_state",
+                    "operator": "is not",
+                    "value": "new"
+                    }}]
+            }}
+         8. Query events marked as 'Escalate' or 'Investigate' by Arcanna:
+            {{
+                "filters": [{{
+                    "field": "arcanna.result_label",
+                    "operator": "is one of",
+                    "value": ['Escalate', 'Investigate']
+                    }}]
+            }}
+         9. Query events not marked as 'Drop' or 'Low priority' by Arcanna:
+            {{
+                "filters": [{{
+                    "field": "arcanna.result_label",
+                    "operator": "is not one of",
+                    "value": ['Drop', 'Low priority']
+                    }}]
+            }}
+         10. Query events with consensus 'Escalate' or 'Drop':
+            {{
+            "filters": [{{
+                "field": "arcanna.consensus",
+                "operator": "is one of",
+                "value": ['Escalate', 'Drop']
+                }}]
+            }}
 
     Returns:
     --------
@@ -97,7 +301,18 @@ async def metrics_job_and_latest_model(job_id: int) -> GetJobAndLatestModelMetri
         "Content-Type": "application/json"
     }
     formatted_url = METRICS_JOB_AND_LATEST_MODEL_URL + f'?job_id={job_id}&timeout_s=120'
-    response = requests.get(formatted_url.format(job_id), headers=headers)
+
+    if start_date:
+        formatted_url += f'&start_datetime={start_date}'
+
+    if end_date:
+        formatted_url += f'&end_datetime={end_date}'
+
+    payload = {}
+    if filters:
+        payload = {"filters": filters}
+
+    response = requests.post(formatted_url.format(job_id), headers=headers, json=payload)
     return response.json()
 
 
