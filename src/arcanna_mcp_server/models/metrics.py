@@ -26,7 +26,18 @@ class GetModelMetricsResponse(BaseModel):
     metrics_per_decision: Dict[str, MetricsPerDecision] = Field(description="Metrics per decision type")
 
 
+class ChangedConsensusInfo(BaseModel):
+    total_events: Optional[int] = Field(None, description="Number of KB alerts with changed consensus"
+                                                          " after model training")
+    top_events_ids: Optional[List[str]] = Field(None, description="Top 100 IDs of alerts with changed consensus"
+                                                                  " after model training")
+    top_buckets_ids: Optional[List[str]] = Field(None, description="Top 100 IDs of buckets with changed consensus"
+                                                                   " after model training")
+
+
 class GetJobMetricsResponse(BaseModel):
+    start_time: Optional[str] = Field(description="The start time for computing the metrics")
+    end_time: Optional[str] = Field(description="The end time for computing the metrics")
     overall_accuracy: Optional[float] = Field(description="The mean accuracy across decisions")
     overall_f1_score: Optional[float] = Field(description="The mean F1 score across decisions")
     overall_recall: Optional[float] = Field(description="The mean recall across decisions")
@@ -38,6 +49,11 @@ class GetJobMetricsResponse(BaseModel):
     metrics_per_decision: Dict[str, MetricsPerDecision] = Field(description="Metrics per decision type for the job")
     active_model_id: Optional[str] = Field(description="The unique identifier of the active model")
     all_model_ids: Optional[List[str]] = Field(description="List of all model identifiers")
+    total_events: Optional[int] = Field(description="Total processed events")
+    total_events_in_knowledge_base: Optional[int] = Field(description="Total processed events in the knowledge base")
+    total_events_with_consensus: Optional[int] = Field(description="Total processed events with feedback (consensus)")
+    changed_consensus_after_training: ChangedConsensusInfo = Field(description="Information regarding changed consensus"
+                                                                               " after model training")
 
 
 class GetJobAndLatestModelMetricsResponse(GetJobMetricsResponse):
