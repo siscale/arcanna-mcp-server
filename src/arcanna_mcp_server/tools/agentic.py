@@ -1,7 +1,7 @@
 from typing import Callable, List, Optional, Union, Dict, Any
 
 import requests
-from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL, NEW_WORKFLOWS_URL
+from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL, UPSERT_WORKFLOWS_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.utils.post_data import post_data
@@ -139,5 +139,5 @@ async def create_agentic_workflow(
         "settings": settings or {}
     }
 
-    response = await post_data(NEW_WORKFLOWS_URL, headers, payload)
+    response = await post_data(UPSERT_WORKFLOWS_URL, headers, payload)
     return response
