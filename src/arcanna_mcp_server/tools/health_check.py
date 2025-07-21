@@ -3,6 +3,7 @@ import requests
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.constants import HEALTH_CHECK_URL
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.utils.tool_scopes import requires_scope
 
 
 def export_tools() -> List[Callable]:
@@ -12,6 +13,7 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
+@requires_scope('public')
 async def health_check() -> dict:
     """
         Health check of Arcanna Management API Server.

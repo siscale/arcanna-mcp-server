@@ -1,10 +1,10 @@
 from typing import Callable, List, Optional, Union
-
 import requests
 from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.utils.post_data import post_data
+from arcanna_mcp_server.utils.tool_scopes import requires_scope
 
 
 def export_tools() -> List[Callable]:
@@ -15,6 +15,7 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
+@requires_scope('read:agents')
 async def list_agentic_workflows() -> list:
     """
         An agentic workflow is a suite of AI Agents that solve user defined tasks. This function lists all agentic workflows available.
@@ -40,6 +41,7 @@ async def list_agentic_workflows() -> list:
 
 
 @handle_exceptions
+@requires_scope('execute:agents')
 async def run_agentic_workflow(workflow_id: Union[str, int], workflow_input: str, session_id: Optional[str] = None) -> dict:
     """
         Run an agentic workflow with a given workflow input.

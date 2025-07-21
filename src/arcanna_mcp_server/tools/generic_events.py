@@ -23,7 +23,7 @@ def export_tools() -> List[Callable]:
     ]
 
 @handle_exceptions
-@requires_scope('write:agents', 'write:event_agentic_notes')
+@requires_scope('write:event_agentic_notes')
 async def add_agentic_notes(job_id: int, event_id: Union[str, int], workflow_name: Optional[str] = None,
                             workflow_id: Optional[Union[str, int]] = None,
                             session_id: Optional[Union[str, int]] = None, agent_notes: str = "",
@@ -392,6 +392,7 @@ async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
 
 
 @handle_exceptions
+@requires_scope('execute:reprocess_events')
 async def reprocess_events(job_id: Union[str, int], start_date: Optional[str] = None, end_date: Optional[str] = None,
                            date_field: Optional[str] = "@timestamp", filters: Optional[List[dict]] = None):
     """
@@ -545,6 +546,7 @@ async def reprocess_events(job_id: Union[str, int], start_date: Optional[str] = 
 
 
 @handle_exceptions
+@requires_scope('execute:reprocess_events')
 async def reprocess_event_by_id(job_id: int, event_id: str):
     """
     Reprocess an event for a job.
@@ -574,6 +576,7 @@ async def reprocess_event_by_id(job_id: int, event_id: str):
 
 
 @handle_exceptions
+@requires_scope('read:event_export')
 async def export_event_by_id(job_id: int, event_id: Union[int, str]) -> dict:
     """
     Export the full definition of an event from a job in JSON format.
@@ -600,6 +603,7 @@ async def export_event_by_id(job_id: int, event_id: Union[int, str]) -> dict:
 
 
 @handle_exceptions
+@requires_scope('read:event_export', 'write:events')
 async def transfer_event(source_job_id: int, event_id: Union[int, str],
                          destination_job_id: int, destination_storage_tag_name: Optional[str] = None) -> TransferEventResponse:
     """
