@@ -1,6 +1,4 @@
 import logging
-from typing import Callable, List
-
 import requests
 from arcanna_mcp_server.constants import GET_TOKEN_SCOPE_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
@@ -23,10 +21,7 @@ def get_api_key_scope() -> set:
         """
         return ':'.join(scope_string.split(':')[:2])
 
-    headers = {
-        "x-arcanna-api-key": MANAGEMENT_API_KEY
-    }
-
+    headers = {"x-arcanna-api-key": MANAGEMENT_API_KEY}
     response = requests.get(
         GET_TOKEN_SCOPE_URL,
         headers=headers
@@ -48,18 +43,18 @@ def filter_by_scope(callables_list):
 
     for func in callables_list:
         if not hasattr(func, 'required_scope'):
-            logger.error(f"Function {func.__name__} does not have required_scope attribute.")
+            logger.warning(f"Function {func.__name__} does not have required_scope attribute.")
             continue
 
-        if func.required_scope == 'public':
-            logger.error(f"Function {func.__name__} requires scope public.")
+        if func.required_scope[0] == 'public':
+            logger.warning(f"Function {func.__name__} have public scope.")
             filtered_callables_list.append(func)
             continue
 
         if not set(func.required_scope).issubset(api_key_scope):
-            logger.error(f"Function {func.__name__} requires scope {func.required_scope}")
+            logger.warning(f"Function {func.__name__} requires scope {func.required_scope}")
             continue
 
         filtered_callables_list.append(func)
-    logger.error(f"Filtered callables list: {filtered_callables_list}")
+
     return filtered_callables_list
