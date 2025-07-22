@@ -21,11 +21,6 @@ async def generate_agentic_code_instructions() -> str:
     Generates instructions for creating Python Agents code for Arcanna Agentic Workflows.
     This tool should be used whenever create_agentic_workflow tool is requested.
 
-    Parameters:
-    -----------
-    user_query : str
-        User query to generate the code for an Agentic Workflow
-
     Returns:
         str: Instructions for generating Python Agents ADK code compatible with Arcanna Agentic Workflows.
     """
