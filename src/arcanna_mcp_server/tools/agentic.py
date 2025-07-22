@@ -16,16 +16,21 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
-async def generate_agentic_code_instructions(user_query: str) -> str:
+async def generate_agentic_code_instructions() -> str:
     """
     Generates instructions for creating Python Agents code for Arcanna Agentic Workflows.
     This tool should be used whenever create_agentic_workflow tool is requested.
+
+    Parameters:
+    -----------
+    user_query : str
+        User query to generate the code for an Agentic Workflow
 
     Returns:
         str: Instructions for generating Python Agents ADK code compatible with Arcanna Agentic Workflows.
     """
 
-    custom_code_block_system_prompt = f"""
+    agentic_code_system_prompt = f"""
     You are an expert Python developer specializing in creating intelligent agents and complex agent workflows using the Google ADK framework. Your task is to write clean, verbose, and well-commented Python code based on user requirements. Your solutions should be robust, efficient, and adhere to ADK best practices.
 
 Follow these instructions carefully:
@@ -162,11 +167,8 @@ Present your code solution in the following format:
 \`\`\`python
 # Your python code here
 \`\`\`
-
-Now, here are the specific user request details you need to implement:
-
 """
-    return custom_code_block_system_prompt + '\n' + user_query
+    return agentic_code_system_prompt
 
 
 @handle_exceptions
