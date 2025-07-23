@@ -15,6 +15,7 @@ INTEGRATION_PARAMETERS_SCHEMA_URL = ARCANNA_HOST + "/api/v2/resources/integratio
 
 # events operations
 QUERY_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/query"
+RAW_ES_QUERY_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/raw_es_query"
 
 REPROCESS_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/{}/reprocess"
 REPROCESS_EVENT_URL = ARCANNA_HOST + "/api/v2/events/{}/{}/reprocess"

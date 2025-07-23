@@ -1,12 +1,12 @@
 import requests
-from typing import List, Callable, Literal, Optional, Union
+from typing import List, Callable, Literal, Optional, Union, Dict, Any
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.models.generic_events import EventsModelResponse, TransferEventResponse
 from arcanna_mcp_server.models.filters import FilterFieldsObject
 from arcanna_mcp_server.constants import (
     EXPORT_EVENT_URL, INGEST_EVENT_URL, QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, \
-    ADD_AGENTIC_NOTES_URL, REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL
+    ADD_AGENTIC_NOTES_URL, REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL, RAW_ES_QUERY_EVENTS_URL
 )
 
 
@@ -175,6 +175,50 @@ async def add_feedback_to_event(job_id: int, event_id: Union[str, int], label: s
     response = requests.put(formatted_url, headers=headers)
     return response.json()
 
+
+@handle_exceptions
+async def raw_es_query_arcanna_events(
+        job_ids: Optional[Union[List[int], int]] = None,
+        job_titles: Optional[Union[List[str], str]] = None,
+        elasticsearch_query_body: Optional[Dict[str, Any]] = None,
+        decision_points_only: Optional[bool] = False,
+):
+    """
+    Query events processed by job IDs or job titles.
+    Both the job_ids and job_title fields may be missing.
+    If neither job_ids nor job_titles are provided, the search will include events across all jobs.
+    In case of an server error, show the error to the user and do not use any other tool, ask the user how he would like to continue.
+
+    Parameters:
+    -----------
+    job_ids : int or list of int or None
+        Job IDs to filter on.
+    job_titles : str or list of str or None
+        Job titles to filter on.
+    elasticsearch_query_body : dict or None
+        Elasticsearch query body to filter events or compute aggregations. It may include "query", "size", "aggs", "track_total_hits" keys.
+    decision_points_only : bool or None
+    """
+    body = {}
+
+    if job_ids:
+        body["job_ids"] = job_ids
+
+    if job_titles:
+        body["job_titles"] = job_titles
+
+    if elasticsearch_query_body:
+        body["elasticsearch_query_body"] = elasticsearch_query_body
+
+    if decision_points_only:
+        body["decision_points_only"] = decision_points_only
+
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content-Type": "application/json"
+    }
+    response = requests.post(RAW_ES_QUERY_EVENTS_URL, json=body, headers=headers)
+    return response.json()
 
 @handle_exceptions
 async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
