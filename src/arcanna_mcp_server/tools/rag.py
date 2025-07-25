@@ -1,3 +1,4 @@
+import json
 from typing import Callable, List
 import requests
 
@@ -13,7 +14,7 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
-async def search_document(query: str, collection_name=None, ) -> dict:
+async def search_document(query: str, collection_name=None, retrieval_level=5) -> dict:
     """
         Search through a collection of documents to find semantic related content based on the query parameter.
     Parameters:
@@ -37,5 +38,10 @@ async def search_document(query: str, collection_name=None, ) -> dict:
         "Content-Type": "application/json"
     }
 
-    response = requests.post(RAG_QUERY_URL, headers=headers)
+    payload = json.dumps({
+        "query": query,
+        "collection_name": collection_name,
+        "retrieval_level": retrieval_level
+    })
+    response = requests.post(RAG_QUERY_URL, data=payload, headers=headers)
     return response.json()
