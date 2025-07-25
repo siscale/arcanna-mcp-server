@@ -1,24 +1,97 @@
 import requests
-from typing import List, Callable, Optional
+from typing import List, Callable, Literal, Optional, Union
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
-from arcanna_mcp_server.models.generic_events import QueryEventsRequest, EventModel, EventsReprocessingModelRequest
-from arcanna_mcp_server.models.filters import FilterFieldsRequest, FilterFieldsObject
-from arcanna_mcp_server.constants import QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, \
-    REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL
+from arcanna_mcp_server.models.generic_events import EventsModelResponse, TransferEventResponse
+from arcanna_mcp_server.models.filters import FilterFieldsObject
+from arcanna_mcp_server.constants import (
+    EXPORT_EVENT_URL, INGEST_EVENT_URL, QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, \
+    ADD_AGENTIC_NOTES_URL, REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL
+)
 
 
 def export_tools() -> List[Callable]:
     return [
+        add_agentic_notes,
         query_arcanna_events,
         add_feedback_to_event,
         reprocess_events,
-        reprocess_event_by_id
-     ]
+        reprocess_event_by_id,
+        export_event_by_id,
+        transfer_event
+    ]
 
 
 @handle_exceptions
-async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsObject]:
+async def add_agentic_notes(job_id: int, event_id: Union[str, int], workflow_name: Optional[str] = None,
+                            workflow_id: Optional[Union[str, int]] = None,
+                            session_id: Optional[Union[str, int]] = None, agent_notes: str = "",
+                            agent_saved_objects: dict = None) -> dict:
+    """
+    Add agentic information to an event.
+
+    This endpoint allows adding agent-generated information to an existing event,
+    including agent name, notes, and saved objects.
+
+    Parameters:
+    --------
+    job_id: int
+        Unique identifier of the job
+    event_id: str or int
+        Unique identifier of the event
+    workflow_name: str, optional
+        Name of the agentic workflow
+    workflow_id: str, optional
+        ID of the workflow
+    session_id: str, optional
+        Session ID of the agentic workflow
+    agent_notes: str
+        Notes from the agent (required)
+    agent_saved_objects: dict, optional
+        Objects saved by the agent (defaults to empty dict if not provided)
+
+    Returns:
+    --------
+    dict
+        A dictionary with the following keys:
+        - status (str): The current status of the operation
+        - reason (str): Short description of the error if one occurred; empty if successful.
+        - reason_details (list): A list of error details if one occurred; empty if successful.
+    """
+
+    if agent_saved_objects is None:
+        agent_saved_objects = {}
+
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "agent_notes": agent_notes,
+        "agent_saved_objects": agent_saved_objects
+    }
+
+    # Add optional fields only if they are provided
+    if workflow_name is not None:
+        payload["workflow_name"] = workflow_name
+    if workflow_id is not None:
+        payload["workflow_id"] = workflow_id
+    if session_id is not None:
+        payload["session_id"] = session_id
+
+    response = requests.post(
+        ADD_AGENTIC_NOTES_URL.format(job_id=str(job_id), event_id=str(event_id)),
+        headers=headers,
+        json=payload
+    )
+    return response.json()
+
+
+@handle_exceptions
+async def get_filter_fields(job_ids: Optional[Union[List[int], int]] = None,
+                            job_titles: Optional[Union[List[str], str]] = None
+                            ) -> List[FilterFieldsObject]:
     """
     Used to get available fields with available operators and the jobs where the fields are available.
     If neither job_ids nor job_titles are provided, the search will include fields across all jobs.
@@ -40,11 +113,11 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
     """
     body = {}
 
-    if request.job_ids:
-        body["job_ids"] = request.job_ids
+    if job_ids:
+        body["job_ids"] = job_ids
 
-    if request.job_titles:
-        body["job_titles"] = request.job_titles
+    if job_titles:
+        body["job_titles"] = job_titles
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
@@ -55,7 +128,7 @@ async def get_filter_fields(request: FilterFieldsRequest) -> List[FilterFieldsOb
 
 
 @handle_exceptions
-async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_name: Optional[str]) -> dict:
+async def add_feedback_to_event(job_id: int, event_id: Union[str, int], label: str, storage_name: Optional[str] = None) -> dict:
     """
     Provide feedback on a previously ingested event by Arcanna job. The provided feedback will be used to train future AI models
     and make better decisions on new and similar events.
@@ -64,7 +137,7 @@ async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_
     -----------
     job_id : int
         Unique identifier for the job.
-    event_id : dict
+    event_id : str or int
         Unique identifier of the event you want to provide feedback for.
     label: str
         Decision label to be applied for the event. Can be for example Escalate or Drop. Escalate means that the user considers
@@ -72,7 +145,7 @@ async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_
         be investigated.
     storage_name: str or None
         Storage name to be used for feedback. Use only if the job have multiple storages defined.
-        If none the feedback will be applied to the latest event with event_id ingested.
+        If none (default) the feedback will be applied to the latest event with event_id ingested.
 
     Returns:
     --------
@@ -104,7 +177,20 @@ async def add_feedback_to_event(job_id: int, event_id: str, label: str, storage_
 
 
 @handle_exceptions
-async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
+async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
+                               job_titles: Optional[Union[List[str], str]] = None,
+                               event_ids: Optional[Union[List[str], str]] = None,
+                               decision_points_only: Optional[bool] = False,
+                               count_results_only: Optional[bool] = False,
+                               start_date: Optional[str] = None,
+                               end_date: Optional[str] = None,
+                               date_field: Optional[str] = "@timestamp",
+                               size: Optional[int] = 5,
+                               page: Optional[int] = 0,
+                               sort_by_column: Optional[str] = "@timestamp",
+                               sort_order: Optional[Literal['desc', 'asc']] = "desc",
+                               filters: Optional[List[dict]] = None
+                               ) -> EventsModelResponse:
     """
     Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria (size, start_date, end_date, filters).
     At least one of 'job_ids', 'job_titles', 'event_ids', 'size', 'filters', 'start_date', or 'end_date' must be provided.
@@ -148,7 +234,7 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
       Each filter in list is a dictionary with keys: "field", "operator" and "value"
       - field - the field to apply filters to
       - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
-      - value to filter by, value is omitted for operators "exists" and "not exists" 
+      - value to filter by, value is omitted for operators "exists" and "not exists"
 
         Arcanna fields:
             1. Arcanna decision field = "arcanna.result_label"
@@ -254,38 +340,44 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
 
     body = {}
 
-    if request.job_ids:
-        body["job_ids"] = request.job_ids
+    if job_ids:
+        body["job_ids"] = job_ids
 
-    if request.job_titles:
-        body["job_titles"] = request.job_titles
+    if job_titles:
+        body["job_titles"] = job_titles
 
-    if request.event_ids:
-        body["event_ids"] = request.event_ids
+    if event_ids:
+        body["event_ids"] = event_ids
 
-    if request.decision_points_only:
-        body["decision_points_only"] = request.decision_points_only
+    if decision_points_only:
+        body["decision_points_only"] = decision_points_only
 
-    if request.start_date:
-        body["start_date"] = request.start_date
+    if count_results_only:
+        body["count_results_only"] = count_results_only
 
-    if request.end_date:
-        body["end_date"] = request.end_date
+    if start_date:
+        body["start_date"] = start_date
 
-    if request.page:
-        body["page"] = request.page
+    if end_date:
+        body["end_date"] = end_date
 
-    if request.size:
-        body["size"] = request.size
+    if date_field:
+        body["date_field"] = date_field
 
-    if request.sort_by_column:
-        body["sort_by_column"] = request.sort_by_column
+    if page:
+        body["page"] = page
 
-    if request.sort_order:
-        body["sort_order"] = request.sort_order
+    if size:
+        body["size"] = size
 
-    if request.filters:
-        body["filters"] =  request.model_dump().get("filters", [])
+    if sort_by_column:
+        body["sort_by_column"] = sort_by_column
+
+    if sort_order:
+        body["sort_order"] = sort_order
+
+    if filters:
+        body["filters"] = filters
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
@@ -296,38 +388,31 @@ async def query_arcanna_events(request: QueryEventsRequest) -> List[EventModel]:
 
 
 @handle_exceptions
-async def reprocess_events(request: EventsReprocessingModelRequest):
+async def reprocess_events(job_id: Union[str, int], start_date: Optional[str] = None, end_date: Optional[str] = None,
+                           date_field: Optional[str] = "@timestamp", filters: Optional[List[dict]] = None):
     """
-    Reprocess events filtered by specific filtering criteria (size, start_date, end_date, filters) for a specific job_id.
+    Reprocess events filtered by specific filtering criteria (start_date, end_date, filters) for a specific job_id.
     When working with timestamps: the '@timestamp' field represents the original alert/event timestamp, while the 'timestamp_inference' field represents the time it was ingested into Arcanna.
-    The default size is 5 if not specified. After the tool execution the user must be informed that only 5 events have been marked for reprocess, because he didn't specify how many. If the user
-    wants to reprocess more he must provide the size.
     Parameters:
     -----------
-    job_id: str
-        Unique identifier of the job
-    start_date : str or None
-        Start date to filter events newer than this date.
-        Date format:
-          - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-    end_date : str or None
-        End date to filter events older than this date.
-        Date format:
-          - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-    size : int or None (default: 5)
-        Number of events to include in response.
-    page : int or None (page counting starts from 0, default: 0)
-        Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
-    sort_by_column : str or None
-        The field used to sort events. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
-    sort_order : str or None
-        The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
-    filters : list of dict or None
-      Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
-      Each filter in list is a dictionary with keys: "field", "operator" and "value"
-      - field - the field to apply filters to
-      - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
-      - value to filter by, value is omitted for operators "exists" and "not exists"
+        job_id: str
+            Unique identifier of the job
+        start_date : str or None
+            Start date to filter events newer than this date.
+            Date format:
+              - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
+        end_date : str or None
+            End date to filter events older than this date.
+            Date format:
+              - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
+        date_field : str or None
+            The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
+        filters : list of dict or None
+          Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
+          Each filter in list is a dictionary with keys: "field", "operator" and "value"
+          - field - the field to apply filters to
+          - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
+          - value to filter by, value is omitted for operators "exists" and "not exists"
 
         Arcanna fields:
             1. Arcanna decision field = "arcanna.result_label"
@@ -428,39 +513,30 @@ async def reprocess_events(request: EventsReprocessingModelRequest):
             - status: str - Status of the request. "OK" means the events were marked for reprocess successfully
             - reason: str - In case of an error, contains details about the error
             - reason_details: str - In case of an error, contains details about the error
-
+        - events_updated (int): Number of events marked for reprocessing.
     """
 
     body = {}
 
-    job_id = request.job_id
+    job_id = job_id
 
-    if request.start_date:
-        body["start_date"] = request.start_date
+    if start_date:
+        body["start_date"] = start_date
 
-    if request.end_date:
-        body["end_date"] = request.end_date
+    if end_date:
+        body["end_date"] = end_date
 
-    if request.page:
-        body["page"] = request.page
+    if date_field:
+        body["date_field"] = date_field
 
-    if request.size:
-        body["size"] = request.size
-
-    if request.sort_by_column:
-        body["sort_by_column"] = request.sort_by_column
-
-    if request.sort_order:
-        body["sort_order"] = request.sort_order
-
-    if request.filters:
-        body["filters"] = request.model_dump().get("filters", [])
+    if filters:
+        body["filters"] = filters
 
     headers = {
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
-    response = requests.post(REPROCESS_EVENTS_URL.format(job_id), json=body, headers=headers)
+    response = requests.post(REPROCESS_EVENTS_URL.format(str(job_id)), json=body, headers=headers)
     return response.json()
 
 
@@ -490,4 +566,73 @@ async def reprocess_event_by_id(job_id: int, event_id: str):
         "Content-Type": "application/json"
     }
     response = requests.post(REPROCESS_EVENT_URL.format(job_id, event_id), headers=headers)
+    return response.json()
+
+
+@handle_exceptions
+async def export_event_by_id(job_id: int, event_id: Union[int, str]) -> dict:
+    """
+    Export the full definition of an event from a job in JSON format.
+
+    Parameters:
+    -----------
+    job_id: int
+        Unique identifier of the job
+    event_id: str or int
+        Unique identifier of the event to be exported
+    -----------
+
+    Returns:
+    -----------
+    The event ingested by the job in JSON format.
+    """
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content_Type": "application/json"
+    }
+
+    response = requests.get(EXPORT_EVENT_URL.format(job_id, event_id), headers=headers)
+    return response.json()
+
+
+@handle_exceptions
+async def transfer_event(source_job_id: int, event_id: Union[int, str],
+                         destination_job_id: int, destination_storage_tag_name: Optional[str] = None) -> TransferEventResponse:
+    """
+    Transfer an event identified by its id from a source job to a new destination job.
+    Event will still exist in the source job. It will be send as a copy to the destination job.
+
+    Parameters:
+    -----------
+    source_job_id: int
+        Unique identifier of the job where the event is stored initially.
+    event_id: str or int
+        Unique identifier of the event to be transfered. This is located in the source job.
+    destination_job_id: int
+        Unique identifier of the job where the event will be stored after transfer.
+    destination_storage_tag_name: string or None
+        In case the destination job is configured as a multi-input job the storage_tag will specify
+        from wich input integration the event is sent.
+    """
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content_Type": "application/json"
+    }
+
+    response = requests.get(EXPORT_EVENT_URL.format(source_job_id, event_id), headers=headers)
+    if response.status_code != 200:
+        return TransferEventResponse(status="NOK", error_message=response.json())
+
+    event_source = response.json().get("arcanna_event")
+    if event_source is None:
+        return TransferEventResponse(status=f"NOK", error_message=f"Event with id {event_id} not found in source job with id {source_job_id}")
+
+    body = {
+        "job_id": destination_job_id,
+        "raw_body": event_source
+    }
+    if destination_storage_tag_name is not None:
+        body["storage_tag"] = destination_storage_tag_name
+
+    response = requests.post(INGEST_EVENT_URL, json=body, headers=headers)
     return response.json()

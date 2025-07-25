@@ -6,6 +6,7 @@ import arcanna_mcp_server.tools.custom_code_block
 import arcanna_mcp_server.tools.generic_events
 import arcanna_mcp_server.tools.metrics
 import arcanna_mcp_server.tools.rag
+import arcanna_mcp_server.tools.agentic
 
 
 def attach_tools(mcp_server: FastMCP):
@@ -16,6 +17,7 @@ def attach_tools(mcp_server: FastMCP):
         arcanna_mcp_server.tools.resources,
         arcanna_mcp_server.tools.generic_events,
         arcanna_mcp_server.tools.metrics,
+        arcanna_mcp_server.tools.agentic,
         arcanna_mcp_server.tools.rag
     ]
     for module in modules:

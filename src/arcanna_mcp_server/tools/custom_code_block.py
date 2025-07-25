@@ -116,7 +116,7 @@ async def generate_code_instructions(user_query: str) -> str:
 
 
 @handle_exceptions
-async def execute_code(source_code: str, job_id: Optional[int], input_test: dict, env_variables: Optional[list], settings: Optional[dict]) -> dict:
+async def execute_code(source_code: str, input_test: dict, job_id: Optional[int] = None, env_variables: Optional[list] = None, settings: Optional[dict] = None) -> dict:
     """
     Send Python function to be executed on Arcanna.
     The function body must follow the template: def transform(input_record):     # body of the function\n    return input_record
@@ -175,9 +175,9 @@ async def execute_code(source_code: str, job_id: Optional[int], input_test: dict
 
 
 @handle_exceptions
-async def save_code(title: str, description: str, source_code: str, job_id: Optional[int],
-                    reprocess_event_id: Optional[str], input_test: dict,
-                    env_variables: Optional[list], settings: Optional[dict]) -> dict:
+async def save_code(title: str, description: str, source_code: str, input_test: dict,
+                    job_id: int, reprocess_event_id: Optional[str] = None,
+                    env_variables: Optional[list] = None, settings: Optional[dict] = None) -> dict:
     """
     Code block integration save request. It adds a new code block integration to specified job_id.
     Ask the user before executing this tool for approval, providing the request details.

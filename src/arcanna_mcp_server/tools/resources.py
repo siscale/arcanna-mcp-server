@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Literal, Union
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.constants import INTEGRATION_PARAMETERS_SCHEMA_URL, RESOURCES_CRUD_URL
 from arcanna_mcp_server.models.base_resource import BaseResource
@@ -219,7 +219,7 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
             - the title of integration as it was saved in arcanna on a previous resource create/update.
             - a query expression where we reference an existing resource eiter by title or by internal id. E.g.:
             "{{integrations(title='Elastic integration')}}", {{integrations(internal_id=1001)}}
-        
+
         '<integration_role>' - Represents the role the integration has in the job. The roles
         in this case can be: 'input', 'processor', 'output', 'enrichment', 'case_creation', 'post_decision'. An integration
         can have multiple roles. For example an Elasticsearch integration can be used both as input and as output.
@@ -244,85 +244,89 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
         Examples:
 
         1). Decision intelligence job with an External REST API input and an Elasticsearch output.
-        
-        Request: 
+
+        Request:
         {
-            "Api Key": {
-                "properties": {
-                    "name": "Api Key from REST API"
+           "resources":
+            {
+                "Api Key": {
+                    "properties": {
+                        "name": "Api Key from REST API"
+                    },
+                    "type": "api_key"
                 },
-                "type": "api_key"
-            },
-            "Elasticsearch from REST API": {
-                "properties": {
-                    "title": "Elasticsearch from REST API",
-                    "integration_type": "Elasticsearch",
-                    "parameters": {
-                        "hosts": "192.168.175.175",
-                        "password": "elastic",
-                        "port": 9200,
-                        "schema": "https",
-                        "user": "elastic"
-                    }
+                "Elasticsearch from REST API": {
+                    "properties": {
+                        "title": "Elasticsearch from REST API",
+                        "integration_type": "Elasticsearch",
+                        "parameters": {
+                            "hosts": "192.168.175.175",
+                            "password": "elastic",
+                            "port": 9200,
+                            "schema": "https",
+                            "user": "elastic"
+                        }
+                    },
+                    "type": "integration"
                 },
-                "type": "integration"
-            },
-            "Exposer integration from REST API": {
-                "properties": {
-                    "title": "Exposer integration from REST API",
-                    "integration_type": "External REST API",
-                    "parameters": {
-                        "api_key": "{{api_keys(name='Api Key from REST API')}}",
-                        "data_type": "JSON alerts"
-                    }
+                "Exposer integration from REST API": {
+                    "properties": {
+                        "title": "Exposer integration from REST API",
+                        "integration_type": "External REST API",
+                        "parameters": {
+                            "api_key": "{{api_keys(name='Api Key from REST API')}}",
+                            "data_type": "JSON alerts"
+                        }
+                    },
+                    "type": "integration"
                 },
-                "type": "integration"
-            },
-            "Exposer input job from REST API": {
-                "properties": {
-                    "title": "Exposer input job from REST API",
-                    "description": "This is a sample job",
-                    "category": "Decision intelligence",
-                    "decision_points": [
-                        "event.outcome",
-                        "event.category"
-                    ],
-                    "advanced_settings": {
-                        "custom_labels": [
+                "Exposer input job from REST API": {
+                    "properties": {
+                        "title": "Exposer input job from REST API",
+                        "description": "This is a sample job",
+                        "category": "Decision intelligence",
+                        "decision_points": [
+                            "event.outcome",
+                            "event.category"
+                        ],
+                        "advanced_settings": {
+                            "custom_labels": [
+                                {
+                                    "name": "Important",
+                                    "hex_color": "#a83232"
+                                },
+                                {
+                                    "name": "Discard",
+                                    "hex_color": "#030bff"
+                                },
+                                {
+                                    "name": "Potential risk",
+                                    "hex_color": "#ffcd03"
+                                }
+                            ]
+                        },
+                        "pipeline_integrations": [
                             {
-                                "name": "Important",
-                                "hex_color": "#a83232"
+                                "resource": "Exposer integration from REST API",
+                                "integration_type": "input",
+                                "enabled": true,
+                                "parameters": {
+                                    "exposed_rest_api_job_tag": "rest_api_exposer",
+                                    "max_batch_size": 100
+                                }
                             },
                             {
-                                "name": "Discard",
-                                "hex_color": "#030bff"
-                            },
-                            {
-                                "name": "Potential risk",
-                                "hex_color": "#ffcd03"
+                                "resource": "Elasticsearch from REST API",
+                                "integration_type": "output",
+                                "enabled": true,
+                                "parameters": {}
                             }
                         ]
                     },
-                    "pipeline_integrations": [
-                        {
-                            "resource": "Exposer integration from REST API",
-                            "integration_type": "input",
-                            "enabled": true,
-                            "parameters": {
-                                "exposed_rest_api_job_tag": "rest_api_exposer",
-                                "max_batch_size": 100
-                            }
-                        },
-                        {
-                            "resource": "Elasticsearch from REST API",
-                            "integration_type": "output",
-                            "enabled": true,
-                            "parameters": {}
-                        }
-                    ]
-                },
-                "type": "job"
+                    "type": "job"
+                }
             }
+            "overwrite": true
         }
 
         Response:
@@ -390,7 +394,7 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
 
 
 async def get_resources(
-        resource_type: Optional[ResourceType] = None, title: Optional[str] = None, id: Optional[str] = None) -> Dict:
+        resource_type: Optional[Literal[ResourceType.API_KEY, ResourceType.INTEGRATION, ResourceType.JOB]] = None, title: Optional[str] = None, id: Optional[Union[str, int]] = None) -> Dict:
     """
         Returns a list of resources. Parameters behave as filters.
         If no parameter is provided all available resources from arcanna are returned. Information about jobs/use cases
@@ -420,14 +424,14 @@ async def get_resources(
     if title:
         params["title"] = title
     elif id:
-        params["id"] = id
+        params["id"] = str(id)
 
     response = requests.get(RESOURCES_CRUD_URL, headers=headers, params=params)
     return response.json()
 
 
 async def delete_resources(
-        resource_type: ResourceType, title: Optional[str] = None, id: Optional[str] = None) -> Dict:
+        resource_type: Literal[ResourceType.API_KEY, ResourceType.INTEGRATION, ResourceType.JOB], title: Optional[str] = None, id: Optional[Union[str, int]] = None) -> Dict:
     """
         Returns a list of resources. Parameters behave as filters.
         If no parameter is provided all available resources from arcanna are returned.
@@ -454,7 +458,7 @@ async def delete_resources(
     if title:
         params["title"] = title
     elif id:
-        params["id"] = id
+        params["id"] = str(id)
 
     response = requests.delete(RESOURCES_CRUD_URL, headers=headers, params=params)
     return response.json()

@@ -71,7 +71,7 @@ class JobProperties(BaseModel):
             if self.storage_tag:
                 for forbidden_character in forbidden_characters:
                     if forbidden_character in self.storage_tag:
-                        raise ValueError(f"storage_tag cannot contain forbiden characters: {forbidden_characters}")
+                        raise ValueError(f"storage_tag cannot contain forbidden characters: {forbidden_characters}")
             return self
 
     class AdvancedSettings(BaseModel):
