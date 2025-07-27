@@ -18,7 +18,8 @@ def export_tools() -> List[Callable]:
         reprocess_events,
         reprocess_event_by_id,
         export_event_by_id,
-        transfer_event
+        transfer_event,
+        get_filter_fields
     ]
 
 
@@ -195,9 +196,56 @@ async def raw_es_query_arcanna_events(
         Job IDs to filter on.
     job_titles : str or list of str or None
         Job titles to filter on.
-    elasticsearch_query_body : dict or None
-        Elasticsearch query body to filter events or compute aggregations. It may include "query", "size", "aggs", "track_total_hits" keys.
     decision_points_only : bool or None
+        If set to true, only decision points will be included in the events response, excluding the full event.
+    elasticsearch_query_body : dict or None
+        Elasticsearch query body to filter events or compute aggregations. It must include "query" key and optional "size", "aggs", "track_total_hits" keys.
+        Here is a list of Arcanna predefined fields:
+            arcanna.storage_tag.keyword                 - keyword
+            arcanna.storage_tag_display_name.keyword    - keyword
+            arcanna.pipeline_status.keyword             - keyword
+            arcanna.pipeline_stage.keyword              - keyword
+            arcanna.original_id.keyword                 - keyword
+            arcanna.outlier_flag                        - boolean
+            arcanna.bucket_id.keyword                   - keyword
+            arcanna.result                              - keyword
+            arcanna.result_label.keyword                - keyword
+            arcanna.previous_result.keyword             - keyword
+            arcanna.model.path                          - keyword
+            arcanna.model.timestamp                     - date
+            arcanna.outlier_score                       - float
+            arcanna.last_compute_consensus_timestamp    - long
+            arcanna.bucket_state.keyword                - keyword
+            arcanna.consensus.keyword                   - keyword
+            arcanna.confidence_percentage               - float
+            arcanna.key_hash.keyword                    - keyword
+            arcanna.confidence_score                    - float
+
+        Timestamp fields:
+         - @timestamp - initial alert timestamp
+         - timestamp_inference - the time the alert has been ingested into Arcanna
+
+        Alert id field: arcanna.original_id.keyword
+        To fetch the alert fields mapping use 'get_filter_fields' tool.
+
+        Queries examples:
+             - Count total alerts:
+                {
+                    "size": 0,
+                    "track_total_hits": true,
+                    "query": {"match_all": {}}
+                }
+             - Arcanna's decision distribution aggregation:
+                {
+                  "size": 0,
+                  "aggs": {
+                    "decision_distribution": {
+                      "terms": {
+                        "field": "arcanna.result_label.keyword"
+                      }
+                    }
+                  }
+                }
     """
     body = {}
 
