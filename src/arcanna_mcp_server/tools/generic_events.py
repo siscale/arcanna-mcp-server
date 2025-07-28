@@ -258,7 +258,7 @@ async def query_arcanna_events(
 
         Timestamp fields:
          - @timestamp - Original alert timestamp - Use this field by default for all time-base queries
-         - timestamp_inference - The time the alert has been ingested into Arcanna - Use this field for time-based queries only if the user specifically asks for the inference timestamp
+         - timestamp_inference - The time the alert has been ingested into Arcanna - Use this field for time-based queries only if the user specifically asks for the inference timestamp. Ask the user if it is not clear what timestamp field to use.
 
         Alert id field: arcanna.original_id.keyword
 
