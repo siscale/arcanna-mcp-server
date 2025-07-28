@@ -19,7 +19,7 @@ def export_tools() -> List[Callable]:
         export_event_by_id,
         transfer_event,
         get_fields_mapping,
-        raw_es_query_arcanna_events
+        query_arcanna_events
     ]
 
 
@@ -213,10 +213,10 @@ async def add_feedback_to_event(job_id: int, event_id: Union[str, int], label: s
 
 
 @handle_exceptions
-async def raw_es_query_arcanna_events(
+async def query_arcanna_events(
         job_ids: Optional[Union[List[int], int]] = None,
         job_titles: Optional[Union[List[str], str]] = None,
-        elasticsearch_query_body: Optional[Dict[str, Any]] = None,
+        query_body: Optional[Dict[str, Any]] = None,
         decision_points_only: Optional[bool] = False,
 ):
     """
@@ -233,7 +233,7 @@ async def raw_es_query_arcanna_events(
         Job titles to filter on.
     decision_points_only : bool or None
         If set to true, only decision points will be included in the events response, excluding the full event.
-    elasticsearch_query_body : dict or None
+    query_body : dict or None
         Elasticsearch query body to filter events or compute aggregations. It must include "query" key and optional "size", "aggs", "track_total_hits" keys.
         Here is a list of Arcanna predefined fields:
             arcanna.storage_tag.keyword                 - keyword
@@ -324,8 +324,8 @@ async def raw_es_query_arcanna_events(
     if job_titles:
         body["job_titles"] = job_titles
 
-    if elasticsearch_query_body:
-        body["elasticsearch_query_body"] = elasticsearch_query_body
+    if query_body:
+        body["query_body"] = query_body
 
     if decision_points_only:
         body["decision_points_only"] = decision_points_only
@@ -337,215 +337,215 @@ async def raw_es_query_arcanna_events(
     response = requests.post(RAW_ES_QUERY_EVENTS_URL, json=body, headers=headers)
     return response.json()
 
-@handle_exceptions
-async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
-                               job_titles: Optional[Union[List[str], str]] = None,
-                               event_ids: Optional[Union[List[str], str]] = None,
-                               decision_points_only: Optional[bool] = False,
-                               count_results_only: Optional[bool] = False,
-                               start_date: Optional[str] = None,
-                               end_date: Optional[str] = None,
-                               date_field: Optional[str] = "@timestamp",
-                               size: Optional[int] = 5,
-                               page: Optional[int] = 0,
-                               sort_by_column: Optional[str] = "@timestamp",
-                               sort_order: Optional[Literal['desc', 'asc']] = "desc",
-                               filters: Optional[List[dict]] = None
-                               ) -> EventsModelResponse:
-    """
-    Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria (size, start_date, end_date, filters).
-    At least one of 'job_ids', 'job_titles', 'event_ids', 'size', 'filters', 'start_date', or 'end_date' must be provided.
-    Both the job_ids and job_title fields may be missing.
-    If neither job_ids nor job_titles are provided, the search will include events across all jobs.
-    When working with timestamps: the '@timestamp' field represents the original alert/event timestamp, while the 'timestamp_inference' field represents the time it was ingested into Arcanna.
-    In case of an internal server error, show the error to the user and do not use any other tool, ask the user how he would like to continue.
-
-    Parameters:
-    -----------
-    job_ids : int or list of int or None
-        Job IDs to filter on.
-    job_titles : str or list of str or None
-        Job titles to filter on.
-    event_ids : str or list of str or None
-        Events IDs to filter on.
-    decision_points_only : bool or None
-         If set to true, only decision points will be included in the events response, excluding the full event.
-    count_results_only : bool or None
-         If set to true, only the total count of events will be returned, and no events.
-    start_date : str or None
-        Start date to filter events newer than this date.
-        Date format:
-          - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-    end_date : str or None
-        End date to filter events older than this date.
-        Date format:
-          - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
-    date_field : str or None
-        The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
-    size : int or None
-        Number of events to include in response. If job_ids or job_titles provided it is the number of events per job.
-    page : int or None (page counting starts from 0, default: 0)
-        Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
-    sort_by_column : str or None
-        The field used to sort events. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
-    sort_order : str or None
-        The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
-    filters : list of dict or None
-      Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
-      Each filter in list is a dictionary with keys: "field", "operator" and "value"
-      - field - the field to apply filters to
-      - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
-      - value to filter by, value is omitted for operators "exists" and "not exists"
-
-        Arcanna fields:
-            1. Arcanna decision field = "arcanna.result_label"
-            2. Arcanna consensus field = "arcanna.consensus"
-            3. Arcanna outlier field flag = "arcanna.outlier_flag"
-            4. Arcanna in model status field = "arcanna.knowledge_base_state" or "arcanna.bucket_state"
-            5. Arcanna low confidence warning flag field = "attention.low_confidence_score.attention_required"
-            6. Arcanna undecided warning flag field = "attention.undecided_consensus.attention_required"
-
-        Predefined filters:
-         1. Query outlier events:
-            {{
-                "filters": [{{
-                    "field": "arcanna.outlier_flag",
-                    "operator": "is",
-                    "value": true
-                    }}]
-            }}
-         2. Query events with low confidence score:
-            {{
-                "filters": [{{
-                    "field": "arcanna.attention.low_confidence_score.attention_required",
-                    "operator": "is",
-                    "value": true
-                    }}]
-            }}
-         3. Query events with undecided consensus:
-            {{
-                "filters": [{{
-                    "field": "arcanna.attention.undecided_consensus.attention_required",
-                    "operator": "is",
-                    "value": true
-                    }}]
-            }}
-         4. Query events with any feedback (Event Centric Decision Intelligence job):
-            {{
-                "filters": [{{
-                    "field": "arcanna.knowledge_base_state",
-                    "operator": "is",
-                    "value": "new"
-                    }}]
-            }}
-         5. Query events without any feedback (Event Centric Decision Intelligence job):
-            {{
-                "filters": [{{
-                    "field": "arcanna.knowledge_base_state",
-                    "operator": "is not",
-                    "value": "new"
-                    }}]
-            }}
-         6. Query events with any feedback (Decision Intelligence job):
-            {{
-                "filters": [{{
-                    "field": "arcanna.bucket_state",
-                    "operator": "is",
-                    "value": "new"
-                    }}]
-            }}
-         7. Query events without any feedback (Decision Intelligence job):
-            {{
-                "filters": [{{
-                    "field": "arcanna.bucket_state",
-                    "operator": "is not",
-                    "value": "new"
-                    }}]
-            }}
-         8. Query events marked as 'Escalate' or 'Investigate' by Arcanna:
-            {{
-                "filters": [{{
-                    "field": "arcanna.result_label",
-                    "operator": "is one of",
-                    "value": ['Escalate', 'Investigate']
-                    }}]
-            }}
-         9. Query events not marked as 'Drop' or 'Low priority' by Arcanna:
-            {{
-                "filters": [{{
-                    "field": "arcanna.result_label",
-                    "operator": "is not one of",
-                    "value": ['Drop', 'Low priority']
-                    }}]
-            }}
-         10. Query events with consensus 'Escalate' or 'Drop':
-            {{
-            "filters": [{{
-                "field": "arcanna.consensus",
-                "operator": "is one of",
-                "value": ['Escalate', 'Drop']
-                }}]
-            }}
-
-    Returns:
-    --------
-    list of dictionary
-    A dictionary containing job details with the following keys:
-        - event_id (str): Unique identifier for the event.
-        - job_id (int): Unique identifier of the job where the event was pulled from.
-        - job_title (str): Unique identifier for the job where the event was pulled from.
-        - decision_points (dict): Dictionary of decision points. Each key in decision_points is a feature used in model training.
-        - arcanna (dict or None): Dictionary containing fields added by Arcanna processing.
-        - raw_event (dict or None): Dictionary containing the raw event data. Event timestamp field is '@timestamp' (use it every time when event/alert timestamp is requested).
-    """
-
-    body = {}
-
-    if job_ids:
-        body["job_ids"] = job_ids
-
-    if job_titles:
-        body["job_titles"] = job_titles
-
-    if event_ids:
-        body["event_ids"] = event_ids
-
-    if decision_points_only:
-        body["decision_points_only"] = decision_points_only
-
-    if count_results_only:
-        body["count_results_only"] = count_results_only
-
-    if start_date:
-        body["start_date"] = start_date
-
-    if end_date:
-        body["end_date"] = end_date
-
-    if date_field:
-        body["date_field"] = date_field
-
-    if page:
-        body["page"] = page
-
-    if size:
-        body["size"] = size
-
-    if sort_by_column:
-        body["sort_by_column"] = sort_by_column
-
-    if sort_order:
-        body["sort_order"] = sort_order
-
-    if filters:
-        body["filters"] = filters
-
-    headers = {
-        "x-arcanna-api-key": MANAGEMENT_API_KEY,
-        "Content-Type": "application/json"
-    }
-    response = requests.post(QUERY_EVENTS_URL, json=body, headers=headers)
-    return response.json()
+# @handle_exceptions
+# async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
+#                                job_titles: Optional[Union[List[str], str]] = None,
+#                                event_ids: Optional[Union[List[str], str]] = None,
+#                                decision_points_only: Optional[bool] = False,
+#                                count_results_only: Optional[bool] = False,
+#                                start_date: Optional[str] = None,
+#                                end_date: Optional[str] = None,
+#                                date_field: Optional[str] = "@timestamp",
+#                                size: Optional[int] = 5,
+#                                page: Optional[int] = 0,
+#                                sort_by_column: Optional[str] = "@timestamp",
+#                                sort_order: Optional[Literal['desc', 'asc']] = "desc",
+#                                filters: Optional[List[dict]] = None
+#                                ) -> EventsModelResponse:
+#     """
+#     Query events filtered by job IDs, job titles, event IDs, or specific filtering criteria (size, start_date, end_date, filters).
+#     At least one of 'job_ids', 'job_titles', 'event_ids', 'size', 'filters', 'start_date', or 'end_date' must be provided.
+#     Both the job_ids and job_title fields may be missing.
+#     If neither job_ids nor job_titles are provided, the search will include events across all jobs.
+#     When working with timestamps: the '@timestamp' field represents the original alert/event timestamp, while the 'timestamp_inference' field represents the time it was ingested into Arcanna.
+#     In case of an internal server error, show the error to the user and do not use any other tool, ask the user how he would like to continue.
+#
+#     Parameters:
+#     -----------
+#     job_ids : int or list of int or None
+#         Job IDs to filter on.
+#     job_titles : str or list of str or None
+#         Job titles to filter on.
+#     event_ids : str or list of str or None
+#         Events IDs to filter on.
+#     decision_points_only : bool or None
+#          If set to true, only decision points will be included in the events response, excluding the full event.
+#     count_results_only : bool or None
+#          If set to true, only the total count of events will be returned, and no events.
+#     start_date : str or None
+#         Start date to filter events newer than this date.
+#         Date format:
+#           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
+#     end_date : str or None
+#         End date to filter events older than this date.
+#         Date format:
+#           - ISO 8601 date string (e.g., 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:MM:SS')
+#     date_field : str or None
+#         The field to be used for date range filtering. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
+#     size : int or None
+#         Number of events to include in response. If job_ids or job_titles provided it is the number of events per job.
+#     page : int or None (page counting starts from 0, default: 0)
+#         Page number, used for pagination. Keep size parameter fixed and increase page size to get more results.
+#     sort_by_column : str or None
+#         The field used to sort events. Defaults to the '@timestamp' field; use the default field unless the user specifies a different one.
+#     sort_order : str or None
+#         The order in which to sort events by. Defaults to 'desc' order; use the default order unless the user specifies a different one.
+#     filters : list of dict or None
+#       Filters to apply to the events returned by the query. If multiple filters are provided, they function as an AND operator between the filters.
+#       Each filter in list is a dictionary with keys: "field", "operator" and "value"
+#       - field - the field to apply filters to
+#       - operator can be: "is", "is not", "is one of", "is not one of", "starts with", "not starts with", "contains", "not contains", "exists", "not exists", "lt", "lte", "gte", "gte"
+#       - value to filter by, value is omitted for operators "exists" and "not exists"
+#
+#         Arcanna fields:
+#             1. Arcanna decision field = "arcanna.result_label"
+#             2. Arcanna consensus field = "arcanna.consensus"
+#             3. Arcanna outlier field flag = "arcanna.outlier_flag"
+#             4. Arcanna in model status field = "arcanna.knowledge_base_state" or "arcanna.bucket_state"
+#             5. Arcanna low confidence warning flag field = "attention.low_confidence_score.attention_required"
+#             6. Arcanna undecided warning flag field = "attention.undecided_consensus.attention_required"
+#
+#         Predefined filters:
+#          1. Query outlier events:
+#             {{
+#                 "filters": [{{
+#                     "field": "arcanna.outlier_flag",
+#                     "operator": "is",
+#                     "value": true
+#                     }}]
+#             }}
+#          2. Query events with low confidence score:
+#             {{
+#                 "filters": [{{
+#                     "field": "arcanna.attention.low_confidence_score.attention_required",
+#                     "operator": "is",
+#                     "value": true
+#                     }}]
+#             }}
+#          3. Query events with undecided consensus:
+#             {{
+#                 "filters": [{{
+#                     "field": "arcanna.attention.undecided_consensus.attention_required",
+#                     "operator": "is",
+#                     "value": true
+#                     }}]
+#             }}
+#          4. Query events with any feedback (Event Centric Decision Intelligence job):
+#             {{
+#                 "filters": [{{
+#                     "field": "arcanna.knowledge_base_state",
+#                     "operator": "is",
+#                     "value": "new"
+#                     }}]
+#             }}
+#          5. Query events without any feedback (Event Centric Decision Intelligence job):
+#             {{
+#                 "filters": [{{
+#                     "field": "arcanna.knowledge_base_state",
+#                     "operator": "is not",
+#                     "value": "new"
+#                     }}]
+#             }}
+#          6. Query events with any feedback (Decision Intelligence job):
+#             {{
+#                 "filters": [{{
+#                     "field": "arcanna.bucket_state",
+#                     "operator": "is",
+#                     "value": "new"
+#                     }}]
+#             }}
+#          7. Query events without any feedback (Decision Intelligence job):
+#             {{
+#                 "filters": [{{
+#                     "field": "arcanna.bucket_state",
+#                     "operator": "is not",
+#                     "value": "new"
+#                     }}]
+#             }}
+#          8. Query events marked as 'Escalate' or 'Investigate' by Arcanna:
+#             {{
+#                 "filters": [{{
+#                     "field": "arcanna.result_label",
+#                     "operator": "is one of",
+#                     "value": ['Escalate', 'Investigate']
+#                     }}]
+#             }}
+#          9. Query events not marked as 'Drop' or 'Low priority' by Arcanna:
+#             {{
+#                 "filters": [{{
+#                     "field": "arcanna.result_label",
+#                     "operator": "is not one of",
+#                     "value": ['Drop', 'Low priority']
+#                     }}]
+#             }}
+#          10. Query events with consensus 'Escalate' or 'Drop':
+#             {{
+#             "filters": [{{
+#                 "field": "arcanna.consensus",
+#                 "operator": "is one of",
+#                 "value": ['Escalate', 'Drop']
+#                 }}]
+#             }}
+#
+#     Returns:
+#     --------
+#     list of dictionary
+#     A dictionary containing job details with the following keys:
+#         - event_id (str): Unique identifier for the event.
+#         - job_id (int): Unique identifier of the job where the event was pulled from.
+#         - job_title (str): Unique identifier for the job where the event was pulled from.
+#         - decision_points (dict): Dictionary of decision points. Each key in decision_points is a feature used in model training.
+#         - arcanna (dict or None): Dictionary containing fields added by Arcanna processing.
+#         - raw_event (dict or None): Dictionary containing the raw event data. Event timestamp field is '@timestamp' (use it every time when event/alert timestamp is requested).
+#     """
+#
+#     body = {}
+#
+#     if job_ids:
+#         body["job_ids"] = job_ids
+#
+#     if job_titles:
+#         body["job_titles"] = job_titles
+#
+#     if event_ids:
+#         body["event_ids"] = event_ids
+#
+#     if decision_points_only:
+#         body["decision_points_only"] = decision_points_only
+#
+#     if count_results_only:
+#         body["count_results_only"] = count_results_only
+#
+#     if start_date:
+#         body["start_date"] = start_date
+#
+#     if end_date:
+#         body["end_date"] = end_date
+#
+#     if date_field:
+#         body["date_field"] = date_field
+#
+#     if page:
+#         body["page"] = page
+#
+#     if size:
+#         body["size"] = size
+#
+#     if sort_by_column:
+#         body["sort_by_column"] = sort_by_column
+#
+#     if sort_order:
+#         body["sort_order"] = sort_order
+#
+#     if filters:
+#         body["filters"] = filters
+#
+#     headers = {
+#         "x-arcanna-api-key": MANAGEMENT_API_KEY,
+#         "Content-Type": "application/json"
+#     }
+#     response = requests.post(QUERY_EVENTS_URL, json=body, headers=headers)
+#     return response.json()
 
 
 @handle_exceptions
