@@ -6,20 +6,20 @@ from arcanna_mcp_server.models.generic_events import EventsModelResponse, Transf
 from arcanna_mcp_server.models.filters import FilterFieldsObject
 from arcanna_mcp_server.constants import (
     EXPORT_EVENT_URL, INGEST_EVENT_URL, QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, \
-    ADD_AGENTIC_NOTES_URL, REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL, RAW_ES_QUERY_EVENTS_URL
+    ADD_AGENTIC_NOTES_URL, REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL, RAW_ES_QUERY_EVENTS_URL, FIELDS_MAPPING_URL
 )
 
 
 def export_tools() -> List[Callable]:
     return [
         add_agentic_notes,
-        query_arcanna_events,
         add_feedback_to_event,
         reprocess_events,
         reprocess_event_by_id,
         export_event_by_id,
         transfer_event,
-        get_filter_fields
+        get_fields_mapping,
+        raw_es_query_arcanna_events
     ]
 
 
@@ -129,6 +129,41 @@ async def get_filter_fields(job_ids: Optional[Union[List[int], int]] = None,
 
 
 @handle_exceptions
+async def get_fields_mapping(job_ids: Optional[Union[List[int], int]] = None,
+                            job_titles: Optional[Union[List[str], str]] = None
+                            ) -> dict:
+    """
+    Used to get available fields mapping from specified jobs.
+    If neither job_ids nor job_titles are provided, the search will include fields across all jobs.
+    This is to be used within the raw_es_query_arcanna_events tool to retrieve a list of available fields, which can then be utilized in Elasticsearch queries and aggregations.
+
+    Parameters:
+    -----------
+    job_ids : int or list of int or None
+        Job IDs to filter on.
+    job_titles : str or list of str or None
+        Job titles to filter on.
+    Returns:
+    --------
+    A dictionary where keys are field names and values are their corresponding types
+    """
+    body = {}
+
+    if job_ids:
+        body["job_ids"] = job_ids
+
+    if job_titles:
+        body["job_titles"] = job_titles
+
+    headers = {
+        "x-arcanna-api-key": MANAGEMENT_API_KEY,
+        "Content-Type": "application/json"
+    }
+    response = requests.post(FIELDS_MAPPING_URL, json=body, headers=headers)
+    return response.json()
+
+
+@handle_exceptions
 async def add_feedback_to_event(job_id: int, event_id: Union[str, int], label: str, storage_name: Optional[str] = None) -> dict:
     """
     Provide feedback on a previously ingested event by Arcanna job. The provided feedback will be used to train future AI models
@@ -222,11 +257,12 @@ async def raw_es_query_arcanna_events(
             arcanna.confidence_score                    - float
 
         Timestamp fields:
-         - @timestamp - initial alert timestamp
-         - timestamp_inference - the time the alert has been ingested into Arcanna
+         - @timestamp - Original alert timestamp - Use this field by default for all time-base queries
+         - timestamp_inference - The time the alert has been ingested into Arcanna - Use this field for time-based queries only if the user specifically asks for the inference timestamp
 
         Alert id field: arcanna.original_id.keyword
-        To fetch the alert fields mapping use 'get_filter_fields' tool.
+
+        If fields other than the predefined ones are required, use the 'get_fields_mapping' tool to retrieve their names and corresponding Elasticsearch types.
 
         Queries examples:
              - Count total alerts:
@@ -235,6 +271,28 @@ async def raw_es_query_arcanna_events(
                     "track_total_hits": true,
                     "query": {"match_all": {}}
                 }
+             - Count alerts with 'class_0' decision from last day:
+                {
+                  "size": 0,
+                  "query": {
+                    "bool": {
+                      "must": [
+                        {
+                          "range": {
+                            "@timestamp": {
+                              "gte": "now-1d"
+                            }
+                          }
+                        },
+                        {
+                          "match": {
+                            "arcanna.result": "class_0"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
              - Arcanna's decision distribution aggregation:
                 {
                   "size": 0,
@@ -242,6 +300,17 @@ async def raw_es_query_arcanna_events(
                     "decision_distribution": {
                       "terms": {
                         "field": "arcanna.result_label.keyword"
+                      }
+                    }
+                  }
+                }
+             - Alert state distribution aggregation:
+                {
+                  "size": 0,
+                  "aggs": {
+                    "alert_state_distribution": {
+                      "terms": {
+                        "field": "arcanna.bucket_state.keyword"
                       }
                     }
                   }
