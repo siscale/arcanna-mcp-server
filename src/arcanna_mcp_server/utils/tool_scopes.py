@@ -14,13 +14,14 @@ def requires_scope(*scope):
     return decorator
 
 
-def get_api_key_scope() -> set:
-    def get_base_scope(scope_string: str):
-        """
-        action:resource_category:resource_type:resource_id -> action:resource_category
-        """
-        return ':'.join(scope_string.split(':')[:2])
+def get_base_scope(scope_string: str):
+    """
+    action:resource_category:resource_type:resource_id -> action:resource_category
+    """
+    return ':'.join(scope_string.split(':')[:2])
 
+
+def get_api_key_scope() -> set:
     headers = {"x-arcanna-api-key": MANAGEMENT_API_KEY}
     response = requests.get(
         GET_TOKEN_SCOPE_URL,
