@@ -3,7 +3,7 @@ from arcanna_mcp_server.constants import START_JOB_URL, STOP_JOB_URL, TRAIN_JOB_
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 import requests
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
-
+from arcanna_mcp_server.utils.tool_scopes import requires_scope
 
 def export_tools() -> List[Callable]:
     return [
@@ -14,6 +14,7 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
+@requires_scope('execute:job_operations')
 async def start_job(job_id: int) -> dict:
     """
         Start a job to start ingesting events.
@@ -40,6 +41,7 @@ async def start_job(job_id: int) -> dict:
 
 
 @handle_exceptions
+@requires_scope('execute:job_operations')
 async def stop_job(job_id: int) -> dict:
     """
         Stop a job to stop ingesting events.
@@ -66,6 +68,7 @@ async def stop_job(job_id: int) -> dict:
 
 
 @handle_exceptions
+@requires_scope('execute:job_operations')
 async def train_job(job_id: int) -> dict:
     """
         Train a job in Arcanna so that the job can learn from the provided feedback.

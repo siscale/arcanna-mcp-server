@@ -4,6 +4,7 @@ from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.models.metrics import GetJobMetricsResponse, GetJobAndLatestModelMetricsResponse, GetModelMetricsResponse
 from arcanna_mcp_server.constants import METRICS_JOB_URL, METRICS_JOB_AND_LATEST_MODEL_URL, METRICS_MODEL_URL, METRICS_MODEL_URL_REQUEST_RECOMPUTE_METRICS
+from arcanna_mcp_server.utils.tool_scopes import requires_scope
 
 
 def export_tools() -> List[Callable]:
@@ -16,6 +17,7 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
+@requires_scope('read:job_metrics')
 async def metrics_job(job_id: int, start_date: str=None, end_date: str=None, filters:list=None) -> GetJobMetricsResponse:
     """
         Fetches the metrics associated with a specific Arcanna job.
@@ -160,6 +162,7 @@ async def metrics_job(job_id: int, start_date: str=None, end_date: str=None, fil
 
 
 @handle_exceptions
+@requires_scope('read:job_metrics')
 async def metrics_job_and_latest_model(job_id: int, start_date: str=None, end_date: str=None, filters:list=None) -> GetJobAndLatestModelMetricsResponse:
     """
         Fetches the metrics associated with a specific Arcanna job and its active model.
@@ -317,6 +320,7 @@ async def metrics_job_and_latest_model(job_id: int, start_date: str=None, end_da
 
 
 @handle_exceptions
+@requires_scope('read:job_metrics')
 async def metrics_model(job_id: int, model_id: str) -> GetModelMetricsResponse:
     """
         Fetches the metrics associated with a specific Arcanna model.
@@ -352,6 +356,7 @@ async def metrics_model(job_id: int, model_id: str) -> GetModelMetricsResponse:
 
 
 @handle_exceptions
+@requires_scope('read:job_metrics', 'execute:recompute_model_metrics')
 async def metrics_model_request_recompute_metrics(job_id: int, model_id: str) -> str:
     """
         Initiates the re-computation of metrics for a specific Arcanna model.
