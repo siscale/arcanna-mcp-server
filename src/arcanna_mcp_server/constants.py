@@ -3,6 +3,9 @@ from arcanna_mcp_server.environment import ARCANNA_HOST, ARCANNA_AGENTS_HOST
 # healthcheck
 HEALTH_CHECK_URL = ARCANNA_HOST + "/api/v2/health/"
 
+# token
+GET_TOKEN_SCOPE_URL = ARCANNA_HOST + "/api/v2/token/scopes"
+
 # custom code block
 CUSTOM_CODE_BLOCK_TEST_URL = ARCANNA_HOST + "/api/v2/custom_code_execution/test"
 CUSTOM_CODE_BLOCK_SAVE_URL = ARCANNA_HOST + "/api/v2/custom_code_execution/save"

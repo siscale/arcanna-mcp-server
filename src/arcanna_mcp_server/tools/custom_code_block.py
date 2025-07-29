@@ -3,6 +3,7 @@ from typing import Optional, List, Callable
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.constants import CUSTOM_CODE_BLOCK_TEST_URL, CUSTOM_CODE_BLOCK_SAVE_URL
+from arcanna_mcp_server.utils.tool_scopes import requires_scope
 
 
 def export_tools() -> List[Callable]:
@@ -38,6 +39,7 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
+@requires_scope('public')
 async def generate_code_instructions() -> str:
     """
     Generates instructions for creating a Python code block for Arcanna integration.
@@ -116,6 +118,7 @@ async def generate_code_instructions() -> str:
 
 
 @handle_exceptions
+@requires_scope('execute:job_code_blocks')
 async def execute_code(source_code: str, input_test: dict, job_id: Optional[int] = None, env_variables: Optional[list] = None, settings: Optional[dict] = None) -> dict:
     """
     Send Python function to be executed on Arcanna.
@@ -175,6 +178,7 @@ async def execute_code(source_code: str, input_test: dict, job_id: Optional[int]
 
 
 @handle_exceptions
+@requires_scope('write:job_code_blocks')
 async def save_code(title: str, description: str, source_code: str, input_test: dict,
                     job_id: int, reprocess_event_id: Optional[str] = None,
                     env_variables: Optional[list] = None, settings: Optional[dict] = None) -> dict:

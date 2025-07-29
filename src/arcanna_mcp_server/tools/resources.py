@@ -4,6 +4,7 @@ from arcanna_mcp_server.constants import INTEGRATION_PARAMETERS_SCHEMA_URL, RESO
 from arcanna_mcp_server.models.base_resource import BaseResource
 from arcanna_mcp_server.models.resource_type import ResourceType
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.utils.tool_scopes import requires_scope
 import requests
 
 
@@ -17,6 +18,7 @@ def export_tools() -> List[Callable]:
 
 
 @handle_exceptions
+@requires_scope('read:resources')
 async def integration_parameters_schema(integration_type: Optional[str] = None, role: Optional[str] = None) -> Dict:
     """
         Returns the parameters definition for all integrations (or a selected one) as a JSON schema.
@@ -48,6 +50,7 @@ async def integration_parameters_schema(integration_type: Optional[str] = None, 
 
 
 @handle_exceptions
+@requires_scope('write:resources')
 async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Optional[bool] = False) -> Dict:
     """
         Execute a request that creates or updates a set of resources. 
@@ -393,6 +396,7 @@ async def upsert_resources(resources: Dict[str, BaseResource], overwrite: Option
     return response_json
 
 
+@requires_scope('read:resources')
 async def get_resources(
         resource_type: Optional[Literal[ResourceType.API_KEY, ResourceType.INTEGRATION, ResourceType.JOB]] = None, title: Optional[str] = None, id: Optional[Union[str, int]] = None) -> Dict:
     """
@@ -430,6 +434,7 @@ async def get_resources(
     return response.json()
 
 
+@requires_scope('delete:resources')
 async def delete_resources(
         resource_type: Literal[ResourceType.API_KEY, ResourceType.INTEGRATION, ResourceType.JOB], title: Optional[str] = None, id: Optional[Union[str, int]] = None) -> Dict:
     """

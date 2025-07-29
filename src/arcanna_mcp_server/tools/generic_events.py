@@ -8,6 +8,7 @@ from arcanna_mcp_server.constants import (
     EXPORT_EVENT_URL, INGEST_EVENT_URL, QUERY_EVENTS_URL, FILTER_FIELDS_URL, EVENT_FEEDBACK_URL_V2, \
     ADD_AGENTIC_NOTES_URL, REPROCESS_EVENTS_URL, REPROCESS_EVENT_URL, RAW_ES_QUERY_EVENTS_URL, FIELDS_MAPPING_URL
 )
+from arcanna_mcp_server.utils.tool_scopes import requires_scope
 
 
 def export_tools() -> List[Callable]:
@@ -22,8 +23,8 @@ def export_tools() -> List[Callable]:
         query_arcanna_events
     ]
 
-
 @handle_exceptions
+@requires_scope('write:event_agentic_notes')
 async def add_agentic_notes(job_id: int, event_id: Union[str, int], workflow_name: Optional[str] = None,
                             workflow_id: Optional[Union[str, int]] = None,
                             session_id: Optional[Union[str, int]] = None, agent_notes: str = "",
@@ -90,6 +91,7 @@ async def add_agentic_notes(job_id: int, event_id: Union[str, int], workflow_nam
 
 
 @handle_exceptions
+@requires_scope('read:event_query')
 async def get_filter_fields(job_ids: Optional[Union[List[int], int]] = None,
                             job_titles: Optional[Union[List[str], str]] = None
                             ) -> List[FilterFieldsObject]:
@@ -129,6 +131,7 @@ async def get_filter_fields(job_ids: Optional[Union[List[int], int]] = None,
 
 
 @handle_exceptions
+@requires_scope('read:event_query')
 async def get_fields_mapping(job_ids: Optional[Union[List[int], int]] = None,
                             job_titles: Optional[Union[List[str], str]] = None
                             ) -> dict:
@@ -164,6 +167,7 @@ async def get_fields_mapping(job_ids: Optional[Union[List[int], int]] = None,
 
 
 @handle_exceptions
+@requires_scope('write:event_feedback')
 async def add_feedback_to_event(job_id: int, event_id: Union[str, int], label: str, storage_name: Optional[str] = None) -> dict:
     """
     Provide feedback on a previously ingested event by Arcanna job. The provided feedback will be used to train future AI models
@@ -213,12 +217,11 @@ async def add_feedback_to_event(job_id: int, event_id: Union[str, int], label: s
 
 
 @handle_exceptions
-async def query_arcanna_events(
-        job_ids: Optional[Union[List[int], int]] = None,
-        job_titles: Optional[Union[List[str], str]] = None,
-        query_body: Optional[Dict[str, Any]] = None,
-        decision_points_only: Optional[bool] = False,
-):
+@requires_scope('read:event_query')
+async def query_arcanna_events(job_ids: Optional[Union[List[int], int]] = None,
+                               job_titles: Optional[Union[List[str], str]] = None,
+                               query_body: Optional[Dict[str, Any]] = None,
+                               decision_points_only: Optional[bool] = False):
     """
     Query events processed by job IDs or job titles.
     Both the job_ids and job_title fields may be missing.
@@ -549,6 +552,7 @@ async def query_arcanna_events(
 
 
 @handle_exceptions
+@requires_scope('execute:reprocess_events')
 async def reprocess_events(job_id: Union[str, int], start_date: Optional[str] = None, end_date: Optional[str] = None,
                            date_field: Optional[str] = "@timestamp", filters: Optional[List[dict]] = None):
     """
@@ -702,6 +706,7 @@ async def reprocess_events(job_id: Union[str, int], start_date: Optional[str] = 
 
 
 @handle_exceptions
+@requires_scope('execute:reprocess_events')
 async def reprocess_event_by_id(job_id: int, event_id: str):
     """
     Reprocess an event for a job.
@@ -731,6 +736,7 @@ async def reprocess_event_by_id(job_id: int, event_id: str):
 
 
 @handle_exceptions
+@requires_scope('read:event_export')
 async def export_event_by_id(job_id: int, event_id: Union[int, str]) -> dict:
     """
     Export the full definition of an event from a job in JSON format.
@@ -757,6 +763,7 @@ async def export_event_by_id(job_id: int, event_id: Union[int, str]) -> dict:
 
 
 @handle_exceptions
+@requires_scope('read:event_export', 'write:events')
 async def transfer_event(source_job_id: int, event_id: Union[int, str],
                          destination_job_id: int, destination_storage_tag_name: Optional[str] = None) -> TransferEventResponse:
     """
