@@ -18,11 +18,13 @@ INTEGRATION_PARAMETERS_SCHEMA_URL = ARCANNA_HOST + "/api/v2/resources/integratio
 
 # events operations
 QUERY_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/query"
+RAW_ES_QUERY_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/raw_es_query"
 
 REPROCESS_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/{}/reprocess"
 REPROCESS_EVENT_URL = ARCANNA_HOST + "/api/v2/events/{}/{}/reprocess"
 
 FILTER_FIELDS_URL = ARCANNA_HOST + "/api/v2/filters/fields"
+FIELDS_MAPPING_URL = ARCANNA_HOST + "/api/v2/filters/fields_mapping"
 
 EVENT_FEEDBACK_URL_V2 = ARCANNA_HOST + "/api/v2/events/{}/{}/feedback"
 ADD_AGENTIC_NOTES_URL = ARCANNA_HOST + "/api/v2/events/{job_id}/{event_id}/add_agentic_notes"
