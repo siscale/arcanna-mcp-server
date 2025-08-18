@@ -18,7 +18,7 @@ def list_collections():
         "x-arcanna-api-key": MANAGEMENT_API_KEY,
         "Content-Type": "application/json"
     }
-    response = requests.post(RAG_LIST_COLLECTIONS_URL, headers=headers)
+    response = requests.get(RAG_LIST_COLLECTIONS_URL, headers=headers)
     response.raise_for_status()
     return response.json()
 
@@ -30,9 +30,9 @@ async def search_collection(query: str, collection_name=None, retrieval_level=5)
     Parameters:
     --------
     query (str): The text to semantically search in a collection of documents
-    collection_name (str): The collection to search in. If no collection is specified, the search is performed in all collections
-    retrieval_level (str): The collection is split in chunks. Only one chunk(the winner chunk) will have the highest semantic score. The retrieval level
-    is a number that specifies how many adjacent chunks (left and right to the winner) to be additionally retrieved.
+    collection_name (str or None): The collection to search in. If collection_name is None or the parameter is not present, the search is performed in all collections
+    retrieval_level (str): If parameter is not present, by default retrieval_level is 5. If not specified by the function caller, retrieval_level should not be given in the payload. The collection is split in chunks. Only one chunk(the winner chunk) will have the highest semantic score. The retrieval level
+    is a number that specifies how many adjacent chunks (left and right to the winner) to be additionally retrieved. If the user specifies he wants a deeper search, retrieval level should be increased.
     Returns:
     --------
     request: dict
@@ -49,13 +49,13 @@ async def search_collection(query: str, collection_name=None, retrieval_level=5)
     }
 
     collection_id = None
-    if collection_name is not None:
+    if collection_name is not None or collection_name == "":
         collections = list_collections().get("collections", [])
-        for collection in collections.get():
+        for collection in collections:
             if collection.get("collection_name") == collection_name:
                 collection_id = collection.get("collection_id")
 
-    if collection_id is None and collection_name is not None:
+    if collection_id is None and (collection_name is not None or collection_name == ""):
         raise Exception(f"Collection with name: {collection_name} doesn't exist.")
 
     payload = json.dumps({
