@@ -1,4 +1,4 @@
-from arcanna_mcp_server.environment import ARCANNA_HOST, ARCANNA_AGENTS_HOST
+from arcanna_mcp_server.environment import ARCANNA_HOST, ARCANNA_AGENTS_HOST, ARCANNA_RAG_HOST
 
 # healthcheck
 HEALTH_CHECK_URL = ARCANNA_HOST + "/api/v2/health/"
@@ -44,4 +44,5 @@ UPSERT_WORKFLOWS_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/upsert"
 RUN_WORKFLOW_BY_ID_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/run/{}"
 
 # rag
-RAG_QUERY_URL = ARCANNA_HOST + "/api/v2/rag/query"
+RAG_QUERY_URL = ARCANNA_RAG_HOST + "/api/v1/rag/query"
+RAG_LIST_COLLECTIONS_URL = ARCANNA_RAG_HOST + "/api/v1/rag/list"
