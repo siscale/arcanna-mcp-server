@@ -3,7 +3,7 @@ name = "arcanna-mcp-server"
 authors = [
   { name="DevSiscale", email="dev@siscale.com" },
 ]
-version = "0.1.28"
+version = "0.1.29"
 description = "The Arcanna MCP server allows user to interact with Arcanna's AI use cases through the Model Context Protocol (MCP)."
 readme = "README.md"
 requires-python = ">=3.10"
