@@ -5,6 +5,7 @@ import requests
 from arcanna_mcp_server.constants import RAG_QUERY_URL, RAG_LIST_COLLECTIONS_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
+from arcanna_mcp_server.utils.tool_scopes import requires_scope
 
 
 def export_tools() -> List[Callable]:
@@ -24,6 +25,7 @@ def list_collections():
 
 
 @handle_exceptions
+@requires_scope('read:rag')
 async def search_collection(query: str, collection_name=None, retrieval_level=5) -> dict:
     """
         Search through a collection of documents to find semantic related content based on the query parameter.
