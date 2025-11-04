@@ -7,8 +7,8 @@ HEALTH_CHECK_URL = ARCANNA_HOST + "/api/v2/health/"
 GET_TOKEN_SCOPE_URL = ARCANNA_HOST + "/api/v2/token/scopes"
 
 # custom code block
-CUSTOM_CODE_BLOCK_TEST_URL = ARCANNA_HOST + "/api/v2/custom_code_execution/test"
-CUSTOM_CODE_BLOCK_SAVE_URL = ARCANNA_HOST + "/api/v2/custom_code_execution/save"
+CUSTOM_CODE_BLOCK_TEST_URL = ARCANNA_HOST + "/api/v2/inline_code_blocks/test"
+CUSTOM_CODE_BLOCK_SAVE_URL = ARCANNA_HOST + "/api/v2/inline_code_blocks/save"
 
 # resources CRUD operations
 RESOURCES_CRUD_URL = ARCANNA_HOST + "/api/v2/resources"
