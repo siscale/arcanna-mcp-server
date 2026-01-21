@@ -42,7 +42,9 @@ async def search_collection(query: str, collection_name=None, retrieval_level=5)
         - status (str): The current status of the operation
         - reason (str): Short description of the error if one occurred; empty if successful.
         - reason_details (str): A message describing the error if one occurred; empty if successful.
-    result (str): The content that can answer the query.
+        - results (list): The matching results of the query. Result has the following 2 elements:
+        - results.content (str): The content that can answer the query.
+        - results.metadata (dict): Any metadata in a dictionary format. Contains additional information about the content. Structure can vary depending on collection. Can be empty.
      """
 
     headers = {
