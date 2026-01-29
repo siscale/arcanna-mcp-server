@@ -8,34 +8,10 @@ from arcanna_mcp_server.utils.tool_scopes import requires_scope
 
 def export_tools() -> List[Callable]:
     return [
-        generate_code_instructions,
-        save_code,
-        execute_code
+        generate_code_instructions
+        # save_code,  # inline code block removed, TODO: update to use the new code block integration logic
+        # execute_code
      ]
-
-
-# def compute_python_function(user_query: str) -> str:
-#     return ""
-#
-#
-# @handle_exceptions
-# async def generate_code_agent(user_query: str) -> str:
-#     """
-#     Tool to be used when generating code is requested.
-#     Use this method to generate a code block from a user query.
-#     After executing this tool ask the user if he wants to execute the code block using the execute_code tool.
-#
-#     Parameters:
-#     -----------
-#     user_query : str
-#         User query to generate a code block from chat.
-#
-#     Returns:
-#     --------
-#     str
-#          A Python function that follows the template: def transform(input_record):     # body of the function\n    return input_record
-#     """
-#     return compute_python_function(user_query)
 
 
 @handle_exceptions
