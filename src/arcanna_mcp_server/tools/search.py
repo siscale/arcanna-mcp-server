@@ -53,27 +53,56 @@ def _fetch_integration_metadata(integration_type: str = None, role: str = None) 
     return response.json()
 
 
-def _build_role_mapping_from_metadata(metadata: Dict) -> Dict[str, List[str]]:
-    """Extract an integration_type_name -> list of pipeline_role_identifiers mapping."""
-    type_to_roles: Dict[str, List[str]] = {}
+def _build_role_mapping_from_metadata(metadata: Dict) -> Dict[int, Dict]:
+    """Extract an integration_subcategory_id -> list of pipeline_role_identifiers mapping."""
+    type_to_roles: Dict[int, Dict] = {}
     for entry in metadata.get("integration_types", []):
-        name = entry.get("name", "")
-        identifiers = entry.get("pipeline_role_identifiers", [])
-        if name:
-            type_to_roles[name] = identifiers
+        integration_subcategory_id = entry.get("id")
+        roles = entry.get("pipeline_role_identifiers", [])
+        if integration_subcategory_id:
+            type_to_roles[integration_subcategory_id] = {
+                "roles": roles,
+                "name": entry.get("name")
+            }
     return type_to_roles
 
 
 def _extract_list(data, resource_type: str) -> List[Dict]:
     """Extract a flat list of resource dicts from the API response, tolerating multiple wrapper formats."""
+    def _flatten_resource_item(item: Dict) -> Dict:
+        if not isinstance(item, dict):
+            return {}
+        if any(key in item for key in ['title', 'name', 'id', 'internal_id', 'properties', 'subcategory_id']):
+            if 'properties' in item and isinstance(item.get('properties'), dict):
+                flat_item = dict(item['properties'])
+                if 'type' in item and 'type' not in flat_item:
+                    flat_item['type'] = item.get('type')
+                return flat_item
+            return item
+
+        # Handle keyed format: {"Resource Title": {"properties": {...}, "type": "job"}}
+        if len(item) == 1:
+            resource_name, raw_item = next(iter(item.items()))
+            if isinstance(raw_item, dict):
+                if isinstance(raw_item.get('properties'), dict):
+                    flat_item = dict(raw_item['properties'])
+                else:
+                    flat_item = dict(raw_item)
+                if isinstance(resource_name, str) and not flat_item.get('title') and not flat_item.get('name'):
+                    flat_item['title'] = resource_name
+                if 'type' in raw_item and 'type' not in flat_item:
+                    flat_item['type'] = raw_item.get('type')
+                return flat_item
+        return item
+
     if isinstance(data, list):
-        return data
+        return [_flatten_resource_item(item) for item in data if isinstance(item, dict)]
     if isinstance(data, dict):
         for key in [resource_type + 's', resource_type, 'resources', 'results', 'data']:
             if key in data and isinstance(data[key], list):
-                return data[key]
+                return [_flatten_resource_item(item) for item in data[key] if isinstance(item, dict)]
         if 'title' in data or 'internal_id' in data:
-            return [data]
+            return [_flatten_resource_item(data)]
     return []
 
 
@@ -127,8 +156,9 @@ async def search_integrations(
     for item in integrations:
         name = _get_field(item, 'title', 'name', default='')
         int_id = _get_field(item, 'internal_id', 'id')
-        int_type = _get_field(item, 'integration_type', default='')
-        supported_roles = role_mapping.get(int_type, [])
+        int_subcategory_id = _get_field(item, 'subcategory_id', default='')
+        supported_roles = role_mapping.get(int_subcategory_id, {}).get('roles', [])
+        integration_type = role_mapping.get(int_subcategory_id, {}).get('name', '')
 
         if not _title_matches(name, title):
             continue
@@ -138,7 +168,7 @@ async def search_integrations(
         results.append({
             'name': name,
             'id': int_id,
-            'integration_type': int_type,
+            'integration_type': integration_type,
             'supported_roles': supported_roles,
         })
 
@@ -168,7 +198,13 @@ async def get_integration_details(
     if not title and id is None:
         return {"error": "Either 'title' or 'id' must be provided."}
 
-    return _fetch_resources(resource_type='integration', title=title, resource_id=id)
+    response_data = _fetch_resources(resource_type='integration', title=title, resource_id=id)
+    integrations = _extract_list(response_data, 'integration')
+    if not integrations:
+        return {"error": "Integration not found"}
+    if len(integrations) == 1:
+        return integrations[0]
+    return {'integrations': integrations, 'total': len(integrations)}
 
 
 # ---------------------------------------------------------------------------
@@ -200,7 +236,8 @@ async def search_jobs(
         --------
         A dict with key 'jobs' containing a list of matches.
         Each entry has: name, id, type, category, and when available:
-        decisions (list of decision point field paths) and
+        decisions (list of custom label names),
+        decision_points (list of job decision point field paths), and
         flow (list of pipeline integration entries with integration_id, title, role).
     """
     response_data = _fetch_resources(resource_type='job')
@@ -231,9 +268,19 @@ async def search_jobs(
             'category': category,
         }
 
+        advanced_settings = _get_field(item, 'advanced_settings', default={})
+        custom_labels = advanced_settings.get('custom_labels', []) if isinstance(advanced_settings, dict) else []
+        if isinstance(custom_labels, list):
+            label_names = [
+                label.get('name') for label in custom_labels
+                if isinstance(label, dict) and label.get('name')
+            ]
+            if label_names:
+                entry['decisions'] = label_names
+
         decision_points = _get_field(item, 'decision_points')
         if decision_points:
-            entry['decisions'] = decision_points
+            entry['decision_points'] = decision_points
 
         pipeline = _get_field(item, 'pipeline_integrations')
         if pipeline and isinstance(pipeline, list):
@@ -274,7 +321,13 @@ async def get_job_details(
     if not title and id is None:
         return {"error": "Either 'title' or 'id' must be provided."}
 
-    return _fetch_resources(resource_type='job', title=title, resource_id=id)
+    response_data = _fetch_resources(resource_type='job', title=title, resource_id=id)
+    jobs = _extract_list(response_data, 'job')
+    if not jobs:
+        return {"error": "Job not found"}
+    if len(jobs) == 1:
+        return jobs[0]
+    return {'jobs': jobs, 'total': len(jobs)}
 
 
 # ---------------------------------------------------------------------------
