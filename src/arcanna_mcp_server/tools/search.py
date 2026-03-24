@@ -22,6 +22,7 @@ def export_tools() -> List[Callable]:
         list_integration_types,
         get_integration_type_metadata,
         setup_integration,
+        setup_job,
     ]
 
 
@@ -446,6 +447,103 @@ async def setup_integration(
                     "parameters": parameters,
                 },
                 "type": "integration",
+            }
+        }
+    }
+
+    response = requests.post(
+        RESOURCES_CRUD_URL,
+        json=body,
+        headers=_api_headers(),
+        params={"overwrite": overwrite},
+    )
+    return response.json()
+
+
+# ---------------------------------------------------------------------------
+# Job setup tool (create / update a job)
+# ---------------------------------------------------------------------------
+
+
+@handle_exceptions
+@requires_scope('write:resources')
+async def setup_job(
+    title: str,
+    category: Literal[
+        'Decision intelligence',
+        'Event centric decision intelligence',
+        'Automated root cause analysis',
+    ],
+    decision_points: List[str],
+    pipeline_integrations: List[Dict[str, Any]],
+    description: Optional[str] = None,
+    custom_labels: Optional[List[Dict[str, str]]] = None,
+    overwrite: Optional[bool] = False,
+) -> Dict:
+    """
+        Create or update a job (use case) with the given configuration.
+
+        Before calling this tool:
+        - Use search_integrations() to find existing integration titles to reference
+          in pipeline_integrations.
+        - Use get_integration_type_metadata(type, role) to discover required
+          pipeline parameters for each integration role.
+
+        Parameters:
+        -----------
+        title : str
+            Display name for the job.
+        category : str
+            Job type. One of:
+            - 'Decision intelligence': alert triage with bucket grouping (most common).
+            - 'Event centric decision intelligence': alert triage without bucket grouping.
+            - 'Automated root cause analysis': clustering and root cause analysis.
+        decision_points : List[str]
+            Field paths used by Arcanna for triage (e.g. ['source.ip', 'event.category']).
+            Nested fields use dot notation.
+        pipeline_integrations : List[Dict[str, Any]]
+            List of pipeline entries. Each entry is a dict with:
+            - 'resource': integration title as saved in Arcanna, or a query expression
+              like "{{integrations(title='My Elastic')}}" or
+              "{{integrations(internal_id=1001)}}".
+            - 'integration_type': the pipeline role — 'input', 'output', 'enrichment',
+              'processor', 'case_creation', or 'post_decision'.
+            - 'enabled': bool (typically true).
+            - 'parameters': dict of per-role pipeline parameters (discovered via
+              get_integration_type_metadata).
+        description : Optional[str]
+            Free-text description of the job.
+        custom_labels : Optional[List[Dict[str, str]]]
+            Decision labels (minimum 3). Each entry has 'name' and 'hex_color'.
+            If omitted, default labels are used ('Escalate', 'Drop', 'Investigate'
+            for Decision intelligence jobs).
+        overwrite : Optional[bool]
+            If False (default) and a job with the same title exists, the request
+            will be rejected. Set to True to update an existing job.
+
+        Returns:
+        --------
+        The API response indicating success or failure, including the internal id
+        and URL of the created/updated job.
+    """
+    properties: Dict[str, Any] = {
+        "title": title,
+        "category": category,
+        "decision_points": decision_points,
+        "pipeline_integrations": pipeline_integrations,
+    }
+
+    if description is not None:
+        properties["description"] = description
+
+    if custom_labels is not None:
+        properties["advanced_settings"] = {"custom_labels": custom_labels}
+
+    body = {
+        "resources": {
+            title: {
+                "properties": properties,
+                "type": "job",
             }
         }
     }
