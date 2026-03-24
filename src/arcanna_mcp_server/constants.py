@@ -16,6 +16,9 @@ RESOURCES_CRUD_URL = ARCANNA_HOST + "/api/v2/resources"
 # integration parameters schema
 INTEGRATION_PARAMETERS_SCHEMA_URL = ARCANNA_HOST + "/api/v2/resources/integration/parameters/schema"
 
+# integration type metadata
+INTEGRATION_METADATA_URL = ARCANNA_HOST + "/api/v2/resources/integration/metadata"
+
 # events operations
 QUERY_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/query"
 RAW_ES_QUERY_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/raw_es_query"
