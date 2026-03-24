@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Literal, Union
+from typing import Any, Callable, Dict, List, Optional, Literal, Union
 
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.constants import RESOURCES_CRUD_URL, INTEGRATION_METADATA_URL
@@ -21,6 +21,7 @@ def export_tools() -> List[Callable]:
         get_job_details,
         list_integration_types,
         get_integration_type_metadata,
+        setup_integration,
     ]
 
 
@@ -393,3 +394,66 @@ async def get_integration_type_metadata(
         return {"error": "'integration_type' must be provided. Use list_integration_types() to discover available names."}
 
     return _fetch_integration_metadata(integration_type=integration_type, role=role)
+
+
+# ---------------------------------------------------------------------------
+# Integration setup tool (create / update an integration instance)
+# ---------------------------------------------------------------------------
+
+
+@handle_exceptions
+@requires_scope('write:resources')
+async def setup_integration(
+    title: str,
+    integration_type: str,
+    parameters: Dict[str, Any],
+    overwrite: Optional[bool] = False,
+) -> Dict:
+    """
+        Create or update an integration with the given connection parameters.
+
+        Before calling this tool, use list_integration_types() to discover available
+        integration type names and get_integration_type_metadata() to find the
+        required connection_parameters for the chosen type.
+
+        Parameters:
+        -----------
+        title : str
+            Display name for the integration (e.g. 'Production Elasticsearch').
+        integration_type : str
+            The type of integration to create (e.g. 'Elasticsearch', 'QRadar',
+            'External REST API'). Must match a name from list_integration_types().
+        parameters : Dict[str, Any]
+            Connection parameters specific to the integration type.
+            Use get_integration_type_metadata() to discover required and optional
+            parameters for the chosen type.
+        overwrite : Optional[bool]
+            If False (default) and an integration with the same title already
+            exists, the request will be rejected. Set to True to update an
+            existing integration.
+
+        Returns:
+        --------
+        The API response indicating success or failure, including the internal id
+        and URL of the created/updated integration.
+    """
+    body = {
+        "resources": {
+            title: {
+                "properties": {
+                    "title": title,
+                    "integration_type": integration_type,
+                    "parameters": parameters,
+                },
+                "type": "integration",
+            }
+        }
+    }
+
+    response = requests.post(
+        RESOURCES_CRUD_URL,
+        json=body,
+        headers=_api_headers(),
+        params={"overwrite": overwrite},
+    )
+    return response.json()
