@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, List, Optional, Literal, Union
 
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
-from arcanna_mcp_server.constants import RESOURCES_CRUD_URL, INTEGRATION_METADATA_URL
+from arcanna_mcp_server.constants import RESOURCES_CRUD_URL, INTEGRATION_METADATA_URL, JOB_METADATA_URL
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.utils.tool_scopes import requires_scope
 import requests
@@ -15,6 +15,7 @@ def export_tools() -> List[Callable]:
         get_job_details,
         list_integration_types,
         get_integration_type_metadata,
+        get_job_category_metadata,
         setup_integration,
         setup_job,
     ]
@@ -77,16 +78,19 @@ def _text_matches(text: str, text_to_match: Optional[str]) -> bool:
 @requires_scope('read:resources')
 async def search_integrations(
     title: Optional[str] = None,
+    integration_type: Optional[str] = None,
     role: Optional[Literal['input', 'enrichment', 'processor', 'case_creation', 'post_decision', 'output']] = None,
 ) -> Dict:
     """
-        Search for configured integration instances with optional filtering by title and/or pipeline role.
+        Search for configured integration instances with optional filtering by
+        integration type, and/or pipeline role.
         Returns a concise list of matching integrations.
 
         Parameters:
         -----------
-        title : Optional[str]
-            Partial or full integration name to match (case-insensitive substring search).
+        integration_type : Optional[str]
+            Partial or full integration type name to match (case-insensitive
+            substring search), e.g. 'Elasticsearch', 'External REST API', 'Splunk'.
         role : Optional[str]
             Keep only integrations whose type supports this pipeline role.
             Available roles: 'input', 'enrichment', 'processor', 'case_creation', 'post_decision', 'output'.
@@ -108,10 +112,10 @@ async def search_integrations(
         if not int_subcategory_id:
             continue
         supported_roles = role_mapping.get(int_subcategory_id, {}).get('roles', [])
-        integration_type = role_mapping.get(int_subcategory_id, {}).get('name', '')
+        integration_type_name = role_mapping.get(int_subcategory_id, {}).get('name', '')
         creatable = role_mapping.get(int_subcategory_id, {}).get('creatable', True)
 
-        if not _text_matches(integration_name, title):
+        if not _text_matches(integration_type_name, integration_type):
             continue
         if role and role not in supported_roles:
             continue
@@ -119,7 +123,7 @@ async def search_integrations(
         results.append({
             'name': integration_name,
             'id': int_id,
-            'integration_type': integration_type,
+            'integration_type': integration_type_name,
             'supported_roles': supported_roles,
             'creatable': creatable
         })
@@ -330,6 +334,56 @@ async def get_integration_type_metadata(
 
 
 # ---------------------------------------------------------------------------
+# Job category metadata tools (catalog of available job categories)
+# ---------------------------------------------------------------------------
+
+
+def _fetch_job_metadata(category: str = None) -> Dict:
+    params = {}
+    if category:
+        params["category"] = category
+    response = requests.get(JOB_METADATA_URL, headers=_api_headers(), params=params)
+    return response.json()
+
+
+@handle_exceptions
+@requires_scope('read:resources')
+async def get_job_category_metadata(
+    category: Optional[str] = None,
+) -> Dict:
+    """
+        Get the required and optional parameters for each Arcanna job category.
+
+        Call this before setup_job() to know exactly which parameters are
+        needed for the chosen category. Different categories require different
+        parameters (e.g. 'Automation' does not use decision_points or
+        custom_labels, while 'Decision intelligence' supports auto_retrain).
+
+        When called without arguments, returns a summary list of all
+        available categories (id, name, description).
+
+        When called with a specific category name, returns the full
+        parameter specification: each parameter's type, whether it is
+        required, its description, and defaults/constraints where applicable.
+
+        Parameters:
+        -----------
+        category : Optional[str]
+            The exact category name (e.g. 'Decision intelligence').
+            If omitted, lists all available categories.
+
+        Returns:
+        --------
+        Without category: {'job_categories': [{'id', 'name', 'description'}, ...]}.
+
+        With category: {'id', 'name', 'description', 'parameters': {...}}
+        where 'parameters' is a dict keyed by parameter name, each value
+        describing type, required, description, and any defaults or schema.
+    """
+    return _fetch_job_metadata(category=category)
+
+
+# ---------------------------------------------------------------------------
 # Integration setup tool (create / update an integration instance)
 # ---------------------------------------------------------------------------
 
@@ -404,6 +458,7 @@ async def setup_job(
     category: Literal[
         'Decision intelligence',
         'Event centric decision intelligence',
+        'Automation',
         'Automated root cause analysis',
     ],
     decision_points: List[str],
@@ -415,12 +470,14 @@ async def setup_job(
 ) -> Dict:
     """
         Create or update an Arcanna job (use case) with the given configuration.
-        A job defines a decision-making pipeline: data flows in from an input
-        integration, passes through optional enrichment / processing / model steps,
-        and the final decision is written to an output integration.
+        Use this tool after discovering job-category requirements and integration
+        pipeline requirements with the metadata tools.
 
         --- Recommended workflow before calling this tool ---
 
+        0. Call get_job_category_metadata(category) to discover category-specific
+           required/optional properties (e.g. whether decision points, custom labels,
+           or auto-retrain are expected for that category).
         1. Call search_integrations() to list integrations already configured in
            Arcanna. Note the exact 'name' of each integration you want to use.
         2. Call list_integration_types() to see what integration types exist and
@@ -445,12 +502,11 @@ async def setup_job(
                 Automation job.
             - 'Automated root cause analysis'
                 Clustering and root-cause analysis.
+            For required fields and advanced settings per category, use
+            get_job_category_metadata(category) and follow that response.
         decision_points : List[str]
-            Field paths from the ingested events that the AI model will use for
-            decision-making (e.g. ['alert_type', 'severity', 'source',
-            'description', 'user_agent']). Use dot notation for nested fields
-            (e.g. 'source.ip'). These must correspond to real fields present in
-            the data ingested by the input integration.
+            Decision-point field paths used by the job.
+            Requirement and expected usage depend on the selected category.
         pipeline_integrations : List[Dict[str, Any]]
             Ordered list of pipeline steps. Each step is a dict with these keys:
 
@@ -473,28 +529,16 @@ async def setup_job(
         description : Optional[str]
             Free-text description of the job's purpose.
         custom_labels : Optional[List[Dict[str, str]]]
-            Custom decision labels the AI model can assign. Minimum 3 labels.
+            Custom decision labels for categories that support/require labels.
+            Check get_job_category_metadata(category) to determine if labels are
+            required, optional, or ignored for the selected category.
             Each entry is a dict with:
               - 'name' (str): label text (e.g. 'Escalate', 'Drop', 'Investigate').
               - 'hex_color' (str): colour hex code (e.g. '#ED0A2C').
-            If omitted, default labels are applied:
-              'Escalate' (#ED0A2C), 'Drop' (#1264FE), 'Investigate' (#9a00ff).
         auto_retrain : Optional[Dict[str, Any]]
-            Automatic retraining schedule and guardrail configuration.
-            Structure:
-              - 'enabled' (bool): Whether automatic retraining is active.
-              - 'cron' (str): Cron expression for the retrain schedule
-                (e.g. '0 0 * * *' for daily at midnight).
-              - 'blockers' (dict): Conditions that block retraining when true.
-                  * 'consensus_flipping' (bool)
-                  * 'low_confidence_score' (bool)
-                  * 'undecided_consensus' (bool)
-                  * 'outliers' (bool)
-                  * 'consensus_changes' (bool)
-            Example:
-              {"enabled": true, "cron": "0 0 * * *",
-               "blockers": {"undecided_consensus": true}}
-            If omitted, auto-retrain is not configured.
+            Automatic retraining schedule and guardrail configuration for
+            categories that support it. Use get_job_category_metadata(category)
+            to determine support and expected structure.
         overwrite : Optional[bool]
             If False (default) and a job with the same title already exists,
             the request will be rejected. Set to True to update an existing job.

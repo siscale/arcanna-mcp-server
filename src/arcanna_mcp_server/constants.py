@@ -19,6 +19,9 @@ INTEGRATION_PARAMETERS_SCHEMA_URL = ARCANNA_HOST + "/api/v2/resources/integratio
 # integration type metadata
 INTEGRATION_METADATA_URL = ARCANNA_HOST + "/api/v2/resources/integration/metadata"
 
+# job category metadata
+JOB_METADATA_URL = ARCANNA_HOST + "/api/v2/resources/job/metadata"
+
 # events operations
 QUERY_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/query"
 RAW_ES_QUERY_EVENTS_URL = ARCANNA_HOST + "/api/v2/events/raw_es_query"
