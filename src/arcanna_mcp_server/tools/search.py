@@ -524,7 +524,9 @@ async def setup_job(
                 keys depend on the (integration_type, role) pair. Discover them
                 by calling get_integration_type_metadata(type, role) and inspecting
                 the 'pipeline_parameters' section.
-            A typical pipeline has at minimum an 'input' and an 'output' step.
+            At least one 'input' step is required.
+            An 'output' step is optional: if omitted, Arcanna automatically adds
+            the default internal output integration.
 
         description : Optional[str]
             Free-text description of the job's purpose.
