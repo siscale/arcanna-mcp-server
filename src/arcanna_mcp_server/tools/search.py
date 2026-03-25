@@ -7,12 +7,6 @@ from arcanna_mcp_server.utils.tool_scopes import requires_scope
 import requests
 
 
-JOB_TYPE_MAPPING = {
-    'Decision Intelligence': ['Decision intelligence', 'Event centric decision intelligence'],
-    'Automation': ['Automated root cause analysis'],
-}
-
-
 def export_tools() -> List[Callable]:
     return [
         search_integrations,
@@ -60,7 +54,7 @@ def _build_role_mapping_from_metadata(metadata: Dict) -> Dict[int, Dict]:
     type_to_roles: Dict[int, Dict] = {}
     for entry in metadata.get("integration_types", []):
         integration_subcategory_id = entry.get("id")
-        roles = entry.get("pipeline_role_identifiers", [])
+        roles = entry.get("roles", [])
         if integration_subcategory_id:
             type_to_roles[integration_subcategory_id] = {
                 "roles": roles,
@@ -68,57 +62,10 @@ def _build_role_mapping_from_metadata(metadata: Dict) -> Dict[int, Dict]:
             }
     return type_to_roles
 
-
-def _extract_list(data, resource_type: str) -> List[Dict]:
-    """Extract a flat list of resource dicts from the API response, tolerating multiple wrapper formats."""
-    def _flatten_resource_item(item: Dict) -> Dict:
-        if not isinstance(item, dict):
-            return {}
-        if any(key in item for key in ['title', 'name', 'id', 'internal_id', 'properties', 'subcategory_id']):
-            if 'properties' in item and isinstance(item.get('properties'), dict):
-                flat_item = dict(item['properties'])
-                if 'type' in item and 'type' not in flat_item:
-                    flat_item['type'] = item.get('type')
-                return flat_item
-            return item
-
-        # Handle keyed format: {"Resource Title": {"properties": {...}, "type": "job"}}
-        if len(item) == 1:
-            resource_name, raw_item = next(iter(item.items()))
-            if isinstance(raw_item, dict):
-                if isinstance(raw_item.get('properties'), dict):
-                    flat_item = dict(raw_item['properties'])
-                else:
-                    flat_item = dict(raw_item)
-                if isinstance(resource_name, str) and not flat_item.get('title') and not flat_item.get('name'):
-                    flat_item['title'] = resource_name
-                if 'type' in raw_item and 'type' not in flat_item:
-                    flat_item['type'] = raw_item.get('type')
-                return flat_item
-        return item
-
-    if isinstance(data, list):
-        return [_flatten_resource_item(item) for item in data if isinstance(item, dict)]
-    if isinstance(data, dict):
-        for key in [resource_type + 's', resource_type, 'resources', 'results', 'data']:
-            if key in data and isinstance(data[key], list):
-                return [_flatten_resource_item(item) for item in data[key] if isinstance(item, dict)]
-        if 'title' in data or 'internal_id' in data:
-            return [_flatten_resource_item(data)]
-    return []
-
-
-def _get_field(resource: Dict, *field_names, default=None):
-    for name in field_names:
-        if name in resource:
-            return resource[name]
-    return default
-
-
-def _title_matches(resource_title: str, query: Optional[str]) -> bool:
-    if not query:
+def _text_matches(text: str, text_to_match: Optional[str]) -> bool:
+    if not text_to_match:
         return True
-    return query.lower() in resource_title.lower()
+    return text_to_match.lower() in text.lower()
 
 
 # ---------------------------------------------------------------------------
@@ -152,26 +99,29 @@ async def search_integrations(
     response_data = _fetch_resources(resource_type='integration')
     metadata = _fetch_integration_metadata()
     role_mapping = _build_role_mapping_from_metadata(metadata)
-    integrations = _extract_list(response_data, 'integration')
 
     results = []
-    for item in integrations:
-        name = _get_field(item, 'title', 'name', default='')
-        int_id = _get_field(item, 'internal_id', 'id')
-        int_subcategory_id = _get_field(item, 'subcategory_id', default='')
+    for item in response_data:
+        integration_name = item.get('title', '')
+        int_id = item.get('id', '')
+        int_subcategory_id = item.get('subcategory_id')
+        if not int_subcategory_id:
+            continue
         supported_roles = role_mapping.get(int_subcategory_id, {}).get('roles', [])
         integration_type = role_mapping.get(int_subcategory_id, {}).get('name', '')
+        creatable = role_mapping.get(int_subcategory_id, {}).get('creatable', True)
 
-        if not _title_matches(name, title):
+        if not _text_matches(integration_name, title):
             continue
         if role and role not in supported_roles:
             continue
 
         results.append({
-            'name': name,
+            'name': integration_name,
             'id': int_id,
             'integration_type': integration_type,
             'supported_roles': supported_roles,
+            'creatable': creatable
         })
 
     return {'integrations': results, 'total': len(results)}
@@ -201,12 +151,11 @@ async def get_integration_details(
         return {"error": "Either 'title' or 'id' must be provided."}
 
     response_data = _fetch_resources(resource_type='integration', title=title, resource_id=id)
-    integrations = _extract_list(response_data, 'integration')
-    if not integrations:
+    if not response_data:
         return {"error": "Integration not found"}
-    if len(integrations) == 1:
-        return integrations[0]
-    return {'integrations': integrations, 'total': len(integrations)}
+    if len(response_data) == 1:
+        return response_data[0]
+    return {'integrations': response_data, 'total': len(response_data)}
 
 
 # ---------------------------------------------------------------------------
@@ -229,10 +178,11 @@ async def search_jobs(
         title : Optional[str]
             Partial or full job name to match (case-insensitive substring search).
         job_type : Optional[str]
-            Filter by high-level job type.
-            'Decision Intelligence' includes both 'Decision intelligence' and
-            'Event centric decision intelligence' categories.
-            'Automation' includes 'Automated root cause analysis' category.
+            Filter by high-level job type. Possible values:
+            'Decision Intelligence'
+            'Event centric decision intelligence'
+            'Automated root cause analysis'
+            'Automation'
 
         Returns:
         --------
@@ -243,34 +193,28 @@ async def search_jobs(
         flow (list of pipeline integration entries with integration_id, title, role).
     """
     response_data = _fetch_resources(resource_type='job')
-    jobs = _extract_list(response_data, 'job')
-
-    allowed_categories = JOB_TYPE_MAPPING.get(job_type) if job_type else None
+    jobs = [v.get("properties", {}) for item in response_data for v in item.values() if v.get("type") == "job"]
+        
 
     results = []
     for item in jobs:
-        name = _get_field(item, 'title', 'name', default='')
-        job_id = _get_field(item, 'internal_id', 'id')
-        category = _get_field(item, 'category', default='')
+        job_name = item.get('title', '')
+        job_id = item.get('id', '')
+        category = item.get('category', '')
 
-        if not _title_matches(name, title):
+        if not _text_matches(job_name, title):
             continue
-        if allowed_categories and category not in allowed_categories:
+            
+        if not _text_matches(category, job_type):
             continue
 
-        friendly_type = next(
-            (t for t, cats in JOB_TYPE_MAPPING.items() if category in cats),
-            category,
-        )
-
-        entry: Dict = {
-            'name': name,
+        entry = {
+            'name': job_name,
             'id': job_id,
-            'type': friendly_type,
             'category': category,
         }
 
-        advanced_settings = _get_field(item, 'advanced_settings', default={})
+        advanced_settings = item.get('advanced_settings', {})
         custom_labels = advanced_settings.get('custom_labels', []) if isinstance(advanced_settings, dict) else []
         if isinstance(custom_labels, list):
             label_names = [
@@ -280,21 +224,9 @@ async def search_jobs(
             if label_names:
                 entry['decisions'] = label_names
 
-        decision_points = _get_field(item, 'decision_points')
+        decision_points = item.get('decision_points')
         if decision_points:
             entry['decision_points'] = decision_points
-
-        pipeline = _get_field(item, 'pipeline_integrations')
-        if pipeline and isinstance(pipeline, list):
-            entry['flow'] = [
-                {
-                    'integration_id': _get_field(pi, 'internal_id', 'id', 'resource'),
-                    'title': _get_field(pi, 'title', 'resource', default=''),
-                    'role': _get_field(pi, 'integration_type', 'role', default=''),
-                }
-                for pi in pipeline
-            ]
-
         results.append(entry)
 
     return {'jobs': results, 'total': len(results)}
@@ -324,7 +256,7 @@ async def get_job_details(
         return {"error": "Either 'title' or 'id' must be provided."}
 
     response_data = _fetch_resources(resource_type='job', title=title, resource_id=id)
-    jobs = _extract_list(response_data, 'job')
+    jobs = [v.get("properties", {}) for item in response_data for v in item.values() if v.get("type") == "job"]
     if not jobs:
         return {"error": "Job not found"}
     if len(jobs) == 1:
@@ -478,48 +410,94 @@ async def setup_job(
     pipeline_integrations: List[Dict[str, Any]],
     description: Optional[str] = None,
     custom_labels: Optional[List[Dict[str, str]]] = None,
+    auto_retrain: Optional[Dict[str, Any]] = None,
     overwrite: Optional[bool] = False,
 ) -> Dict:
     """
-        Create or update a job (use case) with the given configuration.
+        Create or update an Arcanna job (use case) with the given configuration.
+        A job defines a decision-making pipeline: data flows in from an input
+        integration, passes through optional enrichment / processing / model steps,
+        and the final decision is written to an output integration.
 
-        Before calling this tool:
-        - Use search_integrations() to find existing integration titles to reference
-          in pipeline_integrations.
-        - Use get_integration_type_metadata(type, role) to discover required
-          pipeline parameters for each integration role.
+        --- Recommended workflow before calling this tool ---
+
+        1. Call search_integrations() to list integrations already configured in
+           Arcanna. Note the exact 'name' of each integration you want to use.
+        2. Call list_integration_types() to see what integration types exist and
+           what pipeline roles each type supports.
+        3. For every integration you plan to add to the pipeline, call
+           get_integration_type_metadata(type, role) to discover the required
+           pipeline_parameters for that (type, role) combination.
+        4. Build the pipeline_integrations list using the information gathered
+           above and call this tool.
 
         Parameters:
         -----------
         title : str
-            Display name for the job.
+            Display name for the job (e.g. 'Triage - Exfiltration Alerts').
         category : str
-            Job type. One of:
-            - 'Decision intelligence': alert triage with bucket grouping (most common).
-            - 'Event centric decision intelligence': alert triage without bucket grouping.
-            - 'Automated root cause analysis': clustering and root cause analysis.
+            Determines the AI model behaviour. One of:
+            - 'Decision intelligence'
+                Alert triage with bucket grouping. Most common choice.
+            - 'Event centric decision intelligence'
+                Alert triage without bucket grouping.
+            - 'Automation'
+                Automation job.
+            - 'Automated root cause analysis'
+                Clustering and root-cause analysis.
         decision_points : List[str]
-            Field paths used by Arcanna for triage (e.g. ['source.ip', 'event.category']).
-            Nested fields use dot notation.
+            Field paths from the ingested events that the AI model will use for
+            decision-making (e.g. ['alert_type', 'severity', 'source',
+            'description', 'user_agent']). Use dot notation for nested fields
+            (e.g. 'source.ip'). These must correspond to real fields present in
+            the data ingested by the input integration.
         pipeline_integrations : List[Dict[str, Any]]
-            List of pipeline entries. Each entry is a dict with:
-            - 'resource': integration title as saved in Arcanna, or a query expression
-              like "{{integrations(title='My Elastic')}}" or
-              "{{integrations(internal_id=1001)}}".
-            - 'integration_type': the pipeline role — 'input', 'output', 'enrichment',
-              'processor', 'case_creation', or 'post_decision'.
-            - 'enabled': bool (typically true).
-            - 'parameters': dict of per-role pipeline parameters (discovered via
-              get_integration_type_metadata).
+            Ordered list of pipeline steps. Each step is a dict with these keys:
+
+            Required keys:
+              - 'resource' (str): Title of the integration instance as saved in
+                Arcanna. Must match an existing integration name returned by
+                `search_integrations`.
+              - 'integration_type' (str): The pipeline role for this step.
+                Determines when this integration runs in the pipeline. Possible
+                values can be discovered dynamically with list_integration_types
+              - 'enabled' (bool): Whether this pipeline step is active.
+
+            Optional keys:
+              - 'parameters' (dict): Role-specific configuration. The required
+                keys depend on the (integration_type, role) pair. Discover them
+                by calling get_integration_type_metadata(type, role) and inspecting
+                the 'pipeline_parameters' section.
+            A typical pipeline has at minimum an 'input' and an 'output' step.
+
         description : Optional[str]
-            Free-text description of the job.
+            Free-text description of the job's purpose.
         custom_labels : Optional[List[Dict[str, str]]]
-            Decision labels (minimum 3). Each entry has 'name' and 'hex_color'.
-            If omitted, default labels are used ('Escalate', 'Drop', 'Investigate'
-            for Decision intelligence jobs).
+            Custom decision labels the AI model can assign. Minimum 3 labels.
+            Each entry is a dict with:
+              - 'name' (str): label text (e.g. 'Escalate', 'Drop', 'Investigate').
+              - 'hex_color' (str): colour hex code (e.g. '#ED0A2C').
+            If omitted, default labels are applied:
+              'Escalate' (#ED0A2C), 'Drop' (#1264FE), 'Investigate' (#9a00ff).
+        auto_retrain : Optional[Dict[str, Any]]
+            Automatic retraining schedule and guardrail configuration.
+            Structure:
+              - 'enabled' (bool): Whether automatic retraining is active.
+              - 'cron' (str): Cron expression for the retrain schedule
+                (e.g. '0 0 * * *' for daily at midnight).
+              - 'blockers' (dict): Conditions that block retraining when true.
+                  * 'consensus_flipping' (bool)
+                  * 'low_confidence_score' (bool)
+                  * 'undecided_consensus' (bool)
+                  * 'outliers' (bool)
+                  * 'consensus_changes' (bool)
+            Example:
+              {"enabled": true, "cron": "0 0 * * *",
+               "blockers": {"undecided_consensus": true}}
+            If omitted, auto-retrain is not configured.
         overwrite : Optional[bool]
-            If False (default) and a job with the same title exists, the request
-            will be rejected. Set to True to update an existing job.
+            If False (default) and a job with the same title already exists,
+            the request will be rejected. Set to True to update an existing job.
 
         Returns:
         --------
@@ -536,8 +514,13 @@ async def setup_job(
     if description is not None:
         properties["description"] = description
 
+    advanced_settings: Dict[str, Any] = {}
     if custom_labels is not None:
-        properties["advanced_settings"] = {"custom_labels": custom_labels}
+        advanced_settings["custom_labels"] = custom_labels
+    if auto_retrain is not None:
+        advanced_settings["auto_retrain"] = auto_retrain
+    if advanced_settings:
+        properties["advanced_settings"] = advanced_settings
 
     body = {
         "resources": {
