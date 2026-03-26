@@ -461,7 +461,7 @@ async def setup_job(
         'Automation',
         'Automated root cause analysis',
     ],
-    decision_points: List[str],
+    decision_points: Optional[List[str]],
     pipeline_integrations: List[Dict[str, Any]],
     description: Optional[str] = None,
     custom_labels: Optional[List[Dict[str, str]]] = None,
@@ -504,9 +504,8 @@ async def setup_job(
                 Clustering and root-cause analysis.
             For required fields and advanced settings per category, use
             get_job_category_metadata(category) and follow that response.
-        decision_points : List[str]
-            Decision-point field paths used by the job.
-            Requirement and expected usage depend on the selected category.
+        decision_points : Optional[List[str]]
+            Decision-point field paths used by the job. It doesn't apply to Automation jobs.
         pipeline_integrations : List[Dict[str, Any]]
             Ordered list of pipeline steps. Each step is a dict with these keys:
 
