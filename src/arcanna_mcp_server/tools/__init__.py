@@ -17,7 +17,7 @@ def attach_tools(mcp_server: FastMCP):
         arcanna_mcp_server.tools.health_check,
         arcanna_mcp_server.tools.custom_code_block,
         arcanna_mcp_server.tools.resources,
-        arcanna_mcp_server.tools.search,
+        arcanna_mcp_server.tools.resources_management,
         arcanna_mcp_server.tools.generic_events,
         arcanna_mcp_server.tools.metrics,
         arcanna_mcp_server.tools.agentic,
