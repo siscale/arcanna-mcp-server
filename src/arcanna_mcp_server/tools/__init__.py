@@ -1,5 +1,5 @@
 import arcanna_mcp_server.tools.resources
-import arcanna_mcp_server.tools.search
+import arcanna_mcp_server.tools.resources_management
 from mcp.server import FastMCP
 import arcanna_mcp_server.tools.jobs
 import arcanna_mcp_server.tools.health_check
