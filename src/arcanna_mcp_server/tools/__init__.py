@@ -19,7 +19,6 @@ def attach_tools(mcp_server: FastMCP):
         arcanna_mcp_server.tools.generic_events,
         arcanna_mcp_server.tools.metrics,
         arcanna_mcp_server.tools.agentic,
-        arcanna_mcp_server.tools.rag
     ]
     for module in modules:
         filtered_modules_tools = filter_by_scope(module.export_tools())
