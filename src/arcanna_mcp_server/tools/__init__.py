@@ -5,7 +5,6 @@ import arcanna_mcp_server.tools.health_check
 import arcanna_mcp_server.tools.custom_code_block
 import arcanna_mcp_server.tools.generic_events
 import arcanna_mcp_server.tools.metrics
-import arcanna_mcp_server.tools.rag
 import arcanna_mcp_server.tools.agentic
 from arcanna_mcp_server.utils.tool_scopes import filter_by_scope
 
