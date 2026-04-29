@@ -4,6 +4,7 @@ load_dotenv(verbose=True)
 from mcp.server import FastMCP
 
 from arcanna_mcp_server.environment import TRANSPORT_MODE, validate_environment_variables
+from arcanna_mcp_server.prompts import attach_prompts
 from arcanna_mcp_server.tools import attach_tools
 import os
 
@@ -11,6 +12,7 @@ import os
 mcp = FastMCP("arcanna_mcp-server", port=os.getenv("PORT", 8000))
 
 attach_tools(mcp)
+attach_prompts(mcp)
 
 
 def main():
