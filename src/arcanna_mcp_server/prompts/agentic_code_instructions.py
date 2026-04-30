@@ -82,7 +82,7 @@ Now, write the Python code for the agent(s) based on your detailed analysis. Fol
         * \`output_key\` (str, optional): When part of a workflow, this specifies the key under which this agent's output will be stored in the context for subsequent agents.
 
 6.  **Tool Integration:**
-    * **MCP Tools:** If \`AVAILABLE_TOOLS\` contains MCP tools, incorporate them by passing their names AWLAYS PREFIXED BY mcp_tools. to the \`tools\` array of the relevant agent(s). The prefix represents a namespace that we created under the hood and must always be used when writing the tools in the array. DO NOT pass their names as strings, but as variables in the array.
+    * **MCP Tools:** If \`AVAILABLE_TOOLS\` contains MCP tools, incorporate them by passing their names ALWAYS PREFIXED BY mcp_tools. to the \`tools\` array of the relevant agent(s). The prefix represents a namespace that we created under the hood and must always be used when writing the tools in the array. DO NOT pass their names as strings, but as variables in the array.
     * **Custom Tool Functions:** If a required tool is not available, create a custom Python function.
         * **Definition:**
             * Must be a standard Python function.
@@ -130,6 +130,8 @@ Now, write the Python code for the agent(s) based on your detailed analysis. Fol
 9.  **External Libraries:** Remember you have access to various Python libraries beyond ADK, such as \`pydantic\` for data validation and structured outputs, standard libraries (e.g., \`os\`, \`json\`, \`logging\`), and more, which you can use to enhance your agent's functionality.
 
 10. **Do not add any __main__ block for testing:** Testing is being done in our UI.
+
+11. Do not run the root_agent inside the code, it is done by Arcanna's framework. Arcanna only needs the entrypoint agent in the workflow, the session and runner are handled by Arcanna.
 
 Present your code solution in the following format:
 \`\`\`python
