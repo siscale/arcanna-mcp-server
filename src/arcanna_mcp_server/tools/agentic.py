@@ -1,13 +1,14 @@
+import os
 from typing import Annotated, Callable, List, Optional, Union
 
 from pydantic import Field
 
-from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL, UPSERT_WORKFLOWS_URL
+from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL, UPSERT_WORKFLOWS_URL, \
+    TEST_RUN_WORKFLOW_BY_ID_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
-from arcanna_mcp_server.models.agentic.agentic_workflow_summary import AgenticWorkflowSummary
 from arcanna_mcp_server.models.agentic.env_variable import EnvVariable
-from arcanna_mcp_server.models.agentic.run_workflow_response import RunWorkflowResponse
 from arcanna_mcp_server.models.agentic.workflow_settings import WorkflowSettings
+from arcanna_mcp_server.utils.agentic_model_env_variables_map import parse_env_variables_request
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.utils.post_data import post_data
 from arcanna_mcp_server.utils.get_data import get_data
@@ -28,19 +29,22 @@ def export_tools() -> List[Callable]:
         create_agentic_workflow,
         update_agentic_workflow,
         run_agentic_workflow,
+        test_agentic_workflow
     ]
 
 
 @handle_exceptions
 @requires_scope('read:agents')
-async def list_agentic_workflows() -> List[AgenticWorkflowSummary]:
+async def list_agentic_workflows():
     """
     List all available agentic workflows. Returns a summary of each workflow including its ID, name, and description.
     """
     response = await get_data(LIST_WORKFLOWS_URL, _headers())
-    entries = response.get("entries") or []
-    return [AgenticWorkflowSummary(id=entry.get("id"), name=entry.get("name"), description=entry.get("description"))
-            for entry in entries]
+    entries = response.get("entries")
+    if entries is None:
+        return response
+
+    return [{"id": entry.get("id"), "name": entry.get("name"), "description": entry.get("description")} for entry in entries]
 
 
 @handle_exceptions
@@ -70,7 +74,7 @@ async def run_agentic_workflow(
                 "Workflow session ID. Provide this to continue an existing conversation; "
                 "omit to start a new session."
         ))] = None,
-) -> RunWorkflowResponse:
+):
     """
     Run an agentic workflow and wait for completion.
     Returns the workflow's output including agent events and responses.
@@ -81,8 +85,38 @@ async def run_agentic_workflow(
         "session_id": session_id,
     }
 
-    response = await post_data(RUN_WORKFLOW_BY_ID_URL.format(str(workflow_id)), _headers(), payload)
-    return RunWorkflowResponse(**response)
+    return await post_data(RUN_WORKFLOW_BY_ID_URL.format(str(workflow_id)), _headers(), payload)
+
+
+@handle_exceptions
+@requires_scope('execute:agents')
+async def test_agentic_workflow(
+        workflow_input: Annotated[str, Field(description="Input for the agentic workflow.")],
+        source_code: Annotated[str, Field(
+            description="Python source code containing agent definitions.")],
+        env_variables: Annotated[
+            Optional[List[EnvVariable]], Field(description="Environment variables available to the workflow. Specify"
+                                                           " only the variable name and whether it is a secret. Values"
+                                                           " are resolved automatically from the environment at"
+                                                           " runtime.")] = None,
+        session_id: Annotated[Optional[str], Field(description=(
+                "Workflow session ID. Provide this to continue an existing conversation; "
+                "omit to start a new session."
+        ))] = None,
+):
+    """
+    Test an agentic workflow.
+    Returns the workflow's output including agent events and responses.
+    """
+    payload = {
+        "user_input": workflow_input,
+        "wait_for_completion": True,
+        "source_code": source_code,
+        "env_variables": parse_env_variables_request(env_variables),
+        "session_id": session_id,
+    }
+
+    return await post_data(TEST_RUN_WORKFLOW_BY_ID_URL, _headers(), payload)
 
 
 @handle_exceptions
@@ -97,12 +131,11 @@ async def create_agentic_workflow(
     """
     payload = {
         "source_code": source_code,
-        "env_variables": [env_var.model_dump() for env_var in env_variables] if env_variables else None,
+        "env_variables": parse_env_variables_request(env_variables),
         "settings": settings.model_dump() if settings else None,
     }
 
-    response = await post_data(UPSERT_WORKFLOWS_URL, _headers(), payload)
-    return response
+    return await post_data(UPSERT_WORKFLOWS_URL, _headers(), payload)
 
 
 @handle_exceptions
@@ -110,7 +143,8 @@ async def create_agentic_workflow(
 async def update_agentic_workflow(
         workflow_id: Annotated[str, Field(description="Unique identifier of the workflow to update.")],
         source_code: Annotated[str, Field(description="Python source code containing agent definitions. The root_agent's name and description become the workflow's name and description.")],
-        env_variables: Annotated[Optional[List[EnvVariable]], Field(description="Environment variables for the workflow.")] = None,
+        env_variables: Annotated[Optional[List[EnvVariable]], Field(description="Environment variables for the workflow."
+                                                                                " If not None, existing environment variables will be overwritten.")] = None,
         settings: Annotated[Optional[WorkflowSettings], Field(description="Resource settings for the workflow.")] = None,
 ) -> dict:
     """
@@ -119,9 +153,8 @@ async def update_agentic_workflow(
     payload = {
         "id": workflow_id,
         "source_code": source_code,
-        "env_variables": [env_var.model_dump() for env_var in env_variables] if env_variables else None,
+        "env_variables": parse_env_variables_request(env_variables),
         "settings": settings.model_dump() if settings else None,
     }
 
-    response = await post_data(UPSERT_WORKFLOWS_URL, _headers(), payload)
-    return response
+    return await post_data(UPSERT_WORKFLOWS_URL, _headers(), payload)

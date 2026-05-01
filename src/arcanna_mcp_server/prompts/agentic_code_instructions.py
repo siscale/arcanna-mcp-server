@@ -140,6 +140,91 @@ Present your code solution in the following format:
 """
 
 
+WORKFLOW_CREATION_FLOW = r"""
+## Workflow Creation Flow
+
+When a user wants to create a new agentic workflow from scratch, follow this exact
+step-by-step flow. Do NOT skip steps or assume answers the user hasn't given.
+
+### Step 1 — Understand the Goal
+If the user has NOT already described what the workflow should do:
+- Ask the user to describe the workflow's purpose, expected inputs, expected outputs,
+  and any external systems it needs to interact with.
+- Clarify ambiguities before proceeding. For example: "Should the workflow run once
+  or loop until a condition is met?", "Does it need to call any external APIs?"
+
+If the user HAS already described the goal clearly, acknowledge it and move to Step 2.
+
+### Step 2 — LLM Model Selection
+Ask the user which LLM provider and model the agents should use. Present the common
+options concisely:
+- **Google Gemini** — e.g. `gemini/gemini-2.5-flash`, `gemini/gemini-2.5-pro`
+- **Anthropic Claude (via Bedrock)** — e.g. `bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0`
+- **Anthropic Claude (direct)** — e.g. `anthropic/claude-sonnet-4-20250514`
+- **OpenAI** — e.g. `openai/gpt-4o`, `openai/gpt-4.1`
+- **OpenRouter** — e.g. `openrouter/<model-slug>`
+- **Custom / self-hosted** — via LiteLlm with a custom `api_base`
+
+If the user is unsure, recommend a sensible default based on the workflow complexity
+(e.g. Gemini 2.5 Flash for simple workflows, Claude or GPT-4o for complex reasoning).
+
+### Step 3 — API Keys & Environment Variables
+Based on the model chosen in Step 2, ask the user to confirm they have the required
+credentials configured. Be specific:
+
+| Provider         | Required Environment Variables                                                    |
+|------------------|-----------------------------------------------------------------------------------|
+| Google Gemini    | `GOOGLE_API_KEY`                                                                  |
+| Anthropic Direct | `ANTHROPIC_API_KEY`                                                               |
+| AWS Bedrock      | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME`                   |
+| OpenAI           | `OPENAI_API_KEY`                                                                  |
+| OpenRouter       | `OPENROUTER_API_KEY`                                                              |
+| Custom endpoint  | `OPENAI_API_KEY` (or provider-specific), plus `OPENAI_API_BASE` if self-hosted    |
+
+Do NOT proceed to code generation until the user confirms credentials are available.
+If they say the keys are already set in their environment, that's sufficient — don't
+ask them to paste secrets.
+
+### Step 4 — Write the Code
+Using all gathered context (goal, model, tools), generate the agent code following
+the `AGENTIC_CODE_INSTRUCTIONS` above. Ensure:
+- The code is complete and ready to run (no placeholder stubs).
+- All MCP tools referenced from `AVAILABLE_TOOLS` use the `mcp_tools.` prefix.
+- Custom tool functions have full type hints and docstrings.
+- The `root_agent` is the single entry point.
+
+### Step 5 — Test the Code
+After writing the code, immediately invoke the `test_agentic_workflow` tool to
+execute a test run. Do NOT ask the user "would you like me to test it?" — just test it.
+
+### Step 6 — Present Test Results
+Summarize the test run results clearly:
+- What happened at each step of the workflow.
+- Whether tools were called successfully.
+- The final output or any errors encountered.
+- If errors occurred, explain what went wrong in plain language.
+
+### Step 7 — Iterate or Create
+- **If the user is satisfied** with the test results: call `create_agentic_workflow`
+  to persist the workflow. Confirm creation with the workflow ID.
+- **If the user wants changes**: make the requested modifications to the code, then
+  loop back to **Step 5** (test again). Repeat until the user is satisfied.
+- **If the test failed due to a bug**: proactively fix the issue, explain what you
+  changed, and loop back to **Step 5**.
+
+### General Rules
+- Always prefer action over asking for permission when the next step is obvious
+  (e.g., don't ask "shall I test?" — just test).
+- If at any point the user references an existing workflow (by name or ID), use
+  `list_agentic_workflows` or `get_agentic_workflow_by_id` to fetch it before
+  making changes. Use `update_agentic_workflow` instead of `create_agentic_workflow`
+  when modifying an existing workflow. Always ask the user for confirmation before updating an agentic workflow.
+- Keep the user informed at each step — briefly state what you're doing and why.
+- If a test run fails more than 3 times on the same issue, stop and ask the user
+  for guidance rather than looping indefinitely.
+"""
+
+
 def agentic_code_instructions() -> str:
     """Instructions for generating Python Agents ADK code compatible with Arcanna Agentic Workflows.
 
@@ -147,3 +232,14 @@ def agentic_code_instructions() -> str:
     create_agentic_workflow / update_agentic_workflow tools.
     """
     return AGENTIC_CODE_INSTRUCTIONS
+
+
+def workflow_creation_flow() -> str:
+    """Step-by-step flow for creating new agentic workflows from scratch.
+
+    Use this prompt to guide the conversation when a user wants to build
+    a new workflow — covers goal clarification, model selection, API key
+    validation, code generation, testing, and iteration until the workflow
+    is persisted via create_agentic_workflow.
+    """
+    return WORKFLOW_CREATION_FLOW

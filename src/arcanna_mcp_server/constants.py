@@ -53,6 +53,7 @@ METRICS_MODEL_URL_REQUEST_RECOMPUTE_METRICS = ARCANNA_HOST + "/api/v2/metrics/mo
 LIST_WORKFLOWS_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/list"
 UPSERT_WORKFLOWS_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/upsert"
 RUN_WORKFLOW_BY_ID_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/run/{}"
+TEST_RUN_WORKFLOW_BY_ID_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/test/run"
 
 # rag
 RAG_QUERY_URL = ARCANNA_RAG_HOST + "/api/v1/rag/query"
