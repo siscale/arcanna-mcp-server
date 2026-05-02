@@ -139,7 +139,6 @@ Present your code solution in the following format:
 \`\`\`
 """
 
-
 WORKFLOW_CREATION_FLOW = r"""
 ## Workflow Creation Flow
 
@@ -156,46 +155,63 @@ If the user has NOT already described what the workflow should do:
 If the user HAS already described the goal clearly, acknowledge it and move to Step 2.
 
 ### Step 2 — LLM Model Selection
-Ask the user which LLM provider and model the agents should use. Present the common
-options concisely:
-- **Google Gemini** — e.g. `gemini/gemini-2.5-flash`, `gemini/gemini-2.5-pro`
-- **Anthropic Claude (via Bedrock)** — e.g. `bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0`
-- **Anthropic Claude (direct)** — e.g. `anthropic/claude-sonnet-4-20250514`
-- **OpenAI** — e.g. `openai/gpt-4o`, `openai/gpt-4.1`
-- **OpenRouter** — e.g. `openrouter/<model-slug>`
-- **Custom / self-hosted** — via LiteLlm with a custom `api_base`
+Ask the user which LLM provider and model the agents should use. Present the options
+using friendly names:
+
+| Provider              | Models Available                              |
+|-----------------------|-----------------------------------------------|
+| Google Gemini         | Gemini 2.5 Flash, Gemini 2.5 Pro              |
+| Anthropic Claude      | Claude Sonnet 4, Claude Opus 4                |
+| OpenAI                | GPT-4o, GPT-4.1                               |
+| OpenRouter            | (ask user to specify a model slug)            |
+| Custom / self-hosted  | (ask user for endpoint and model name)        |
+
+Do NOT mention model IDs to the user — use only the friendly names above.
+Internally map the selected friendly name to the correct LiteLLM model ID when
+generating code.
 
 If the user is unsure, recommend a sensible default based on the workflow complexity
-(e.g. Gemini 2.5 Flash for simple workflows, Claude or GPT-4o for complex reasoning).
+(e.g. Gemini 2.5 Flash for simple workflows, Claude Sonnet 4 or GPT-4o for complex
+reasoning).
 
-### Step 3 — API Keys & Environment Variables
-Based on the model chosen in Step 2, ask the user to confirm they have the required
-credentials configured. Be specific:
+### Step 3 — Required Credentials
+Based on the provider selected in Step 2, look up the required environment variables
+for that provider:
 
-| Provider         | Required Environment Variables                                                    |
-|------------------|-----------------------------------------------------------------------------------|
-| Google Gemini    | `GOOGLE_API_KEY`                                                                  |
-| Anthropic Direct | `ANTHROPIC_API_KEY`                                                               |
-| AWS Bedrock      | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME`                   |
-| OpenAI           | `OPENAI_API_KEY`                                                                  |
-| OpenRouter       | `OPENROUTER_API_KEY`                                                              |
-| Custom endpoint  | `OPENAI_API_KEY` (or provider-specific), plus `OPENAI_API_BASE` if self-hosted    |
+| Provider              | Required Environment Variables                                          |
+|-----------------------|-------------------------------------------------------------------------|
+| Google Gemini         | `GOOGLE_API_KEY`                                                        |
+| Anthropic Claude      | `ANTHROPIC_API_KEY`                                                     |
+| Anthropic via Bedrock | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME`         |
+| OpenAI                | `OPENAI_API_KEY`                                                        |
+| OpenRouter            | `OPENROUTER_API_KEY`                                                    |
+| Custom / self-hosted  | `OPENAI_API_KEY` (or provider-specific), `OPENAI_API_BASE`              |
 
-Do NOT proceed to code generation until the user confirms credentials are available.
-If they say the keys are already set in their environment, that's sufficient — don't
-ask them to paste secrets.
+Always display the following warning to the user, substituting the correct variable
+names for the chosen provider:
+
+> ⚠️ **Heads up!** For this workflow to run, the following environment variable(s)
+> must be set in your Arcanna MCP server:
+> `<VAR_1>`, `<VAR_2>`, ...
+> You can configure these later inside the Arcanna platform, but the workflow will
+> not be able to run until they are set.
+
+This is NOT a blocking step. Proceed to Step 4 immediately after displaying the warning.
 
 ### Step 4 — Write the Code
-Using all gathered context (goal, model, tools), generate the agent code following
-the `AGENTIC_CODE_INSTRUCTIONS` above. Ensure:
+Using all gathered context (goal, model, tools), generate the root agent code. Ensure:
 - The code is complete and ready to run (no placeholder stubs).
 - All MCP tools referenced from `AVAILABLE_TOOLS` use the `mcp_tools.` prefix.
 - Custom tool functions have full type hints and docstrings.
 - The `root_agent` is the single entry point.
 
 ### Step 5 — Test the Code
-After writing the code, immediately invoke the `test_agentic_workflow` tool to
-execute a test run. Do NOT ask the user "would you like me to test it?" — just test it.
+After writing the code, ask the user if they want to test the workflow before creating it:
+
+> "Would you like to run a test before saving the workflow, or should I go ahead and create it directly?"
+
+- **If the user wants to test**: invoke `test_agentic_workflow` and proceed to Step 6.
+- **If the user wants to create directly**: skip to Step 7 and call `create_agentic_workflow`.
 
 ### Step 6 — Present Test Results
 Summarize the test run results clearly:
@@ -213,8 +229,6 @@ Summarize the test run results clearly:
   changed, and loop back to **Step 5**.
 
 ### General Rules
-- Always prefer action over asking for permission when the next step is obvious
-  (e.g., don't ask "shall I test?" — just test).
 - If at any point the user references an existing workflow (by name or ID), use
   `list_agentic_workflows` or `get_agentic_workflow_by_id` to fetch it before
   making changes. Use `update_agentic_workflow` instead of `create_agentic_workflow`
@@ -223,7 +237,6 @@ Summarize the test run results clearly:
 - If a test run fails more than 3 times on the same issue, stop and ask the user
   for guidance rather than looping indefinitely.
 """
-
 
 def agentic_code_instructions() -> str:
     """Instructions for generating Python Agents ADK code compatible with Arcanna Agentic Workflows.
