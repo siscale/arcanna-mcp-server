@@ -4,7 +4,7 @@ from typing import Annotated, Callable, List, Optional, Union
 from pydantic import Field
 
 from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL, UPSERT_WORKFLOWS_URL, \
-    TEST_RUN_WORKFLOW_BY_ID_URL
+    TEST_RUN_WORKFLOW_BY_ID_URL, TOOL_DISCOVERY_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.models.agentic.env_variable import EnvVariable
 from arcanna_mcp_server.models.agentic.workflow_settings import WorkflowSettings
@@ -29,7 +29,8 @@ def export_tools() -> List[Callable]:
         create_agentic_workflow,
         update_agentic_workflow,
         run_agentic_workflow,
-        test_agentic_workflow
+        test_agentic_workflow,
+        agents_tool_discovery
     ]
 
 
@@ -158,3 +159,12 @@ async def update_agentic_workflow(
     }
 
     return await post_data(UPSERT_WORKFLOWS_URL, _headers(), payload)
+
+
+@handle_exceptions
+@requires_scope('read:agents')
+async def agents_tool_discovery() -> dict:
+    """
+    Discover tools for agents in agentic workflows. This function provides
+    """
+    return await get_data(TOOL_DISCOVERY_URL, _headers())

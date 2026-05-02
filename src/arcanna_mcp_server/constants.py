@@ -54,7 +54,9 @@ LIST_WORKFLOWS_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/list"
 UPSERT_WORKFLOWS_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/upsert"
 RUN_WORKFLOW_BY_ID_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/run/{}"
 TEST_RUN_WORKFLOW_BY_ID_URL = ARCANNA_AGENTS_HOST + "/api/v1/agents-workflow/test/run"
+TOOL_DISCOVERY_URL = ARCANNA_AGENTS_HOST + "/api/v1/tools-discovery"
 
 # rag
 RAG_QUERY_URL = ARCANNA_RAG_HOST + "/api/v1/rag/query"
 RAG_LIST_COLLECTIONS_URL = ARCANNA_RAG_HOST + "/api/v1/rag/list"
+
