@@ -209,6 +209,38 @@ to the user. If tool discovery itself is unavailable, skip this step entirely.
   required functionality and ask whether they would like you to implement custom
   Python tool functions, or if they prefer to handle it differently.
 
+### Step 3.75 — Code Generation Contract (read before writing any code)
+
+The following is the authoritative spec for generated agent code. It describes
+the runtime environment the code runs in. Never deviate from these rules.
+
+**Runtime globals (already in scope — never import these):**
+- `mcp_tools` — namespace object; call tools via `mcp_tools.tool_name(...)`.
+  Do NOT write `import mcp_tools` or `from mcp_tools import ...`. It will fail.
+- `root_agent` — must be assigned at module top-level; it is the single entry point.
+
+**Canonical code skeleton:**
+```python
+from google.adk.agents import LlmAgent
+from google.adk.models.lite_llm import LiteLlm  # required for model spec
+
+root_agent = LlmAgent(
+    name="...",
+    model=LiteLlm(model="<litellm_model_id>"),  # always wrap in LiteLlm(...)
+    instruction="...",
+    tools=[
+        mcp_tools.some_tool,   # reference, not a call
+    ],
+)
+```
+
+**Rules:**
+1. `mcp_tools.<name>` is a reference to pass into `tools=[...]`. Never call it at module level.
+2. The `model` parameter must always be `LiteLlm(model="<litellm_model_id>")` — never a bare string. Missing this will cause a runtime error.
+3. Only import third-party packages that are genuinely needed (e.g. `google.adk.agents`, `google.adk.models.lite_llm`). Never import runtime globals.
+4. No stubs, TODOs, or placeholder strings. The code must be complete and ready to run.
+5. If a tool requires arguments the agent decides at runtime, pass it by reference — the agent resolves args itself.
+
 Only proceed to Step 4 after this step is complete.
 
 ### Step 4 — Write the Code
