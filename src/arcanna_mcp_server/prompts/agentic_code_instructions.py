@@ -198,6 +198,19 @@ names for the chosen provider:
 
 This is NOT a blocking step. Proceed to Step 4 immediately after displaying the warning.
 
+### Step 3.5 — Tool Discovery (Automatic)
+Silently discover all tools available for use by agents. Do NOT surface this step
+to the user. If tool discovery itself is unavailable, skip this step entirely.
+
+- Analyze the workflow goal and select the tools that are relevant.
+- If suitable tools are found: use them in the generated code exactly as described
+  in the tool's usage instructions returned by the discovery response.
+- If no suitable tools are found: inform the user that no existing tools cover the
+  required functionality and ask whether they would like you to implement custom
+  Python tool functions, or if they prefer to handle it differently.
+
+Only proceed to Step 4 after this step is complete.
+
 ### Step 4 — Write the Code
 Using all gathered context (goal, model, tools), generate the root agent code. Ensure:
 - The code is complete and ready to run (no placeholder stubs).
