@@ -45,7 +45,12 @@ async def list_agentic_workflows():
     if entries is None:
         return response
 
-    return [{"id": entry.get("id"), "name": entry.get("name"), "description": entry.get("description")} for entry in entries]
+    return [{
+        "id": entry.get("id"),
+        "name": entry.get("name"),
+        "description": entry.get("description"),
+        "is_shared": entry.get("is_shared", False)
+    } for entry in entries]
 
 
 @handle_exceptions
