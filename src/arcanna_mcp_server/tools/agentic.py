@@ -3,7 +3,7 @@ from typing import Annotated, Callable, List, Optional, Union
 from pydantic import Field
 
 from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL, UPSERT_WORKFLOWS_URL, \
-    TEST_RUN_WORKFLOW_BY_ID_URL, TOOL_DISCOVERY_URL
+    TEST_RUN_WORKFLOW_BY_ID_URL, TOOL_DISCOVERY_URL, LLM_PROVIDERS_DISCOVERY_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.models.agentic.env_variable import EnvVariable
 from arcanna_mcp_server.models.agentic.workflow_settings import WorkflowSettings
@@ -29,7 +29,8 @@ def export_tools() -> List[Callable]:
         update_agentic_workflow,
         run_agentic_workflow,
         test_agentic_workflow,
-        agents_tool_discovery
+        agents_tool_discovery,
+        get_llm_integrations
     ]
 
 
@@ -169,6 +170,16 @@ async def update_agentic_workflow(
 @requires_scope('read:agents')
 async def agents_tool_discovery() -> dict:
     """
-    Discover tools for agents in agentic workflows. This function provides
+    Discover tools for agents in agentic workflows. These tools can be found in Arcanna's environment where agents run
+    and have access to them.
     """
     return await get_data(TOOL_DISCOVERY_URL, _headers())
+
+
+@handle_exceptions
+@requires_scope('read:agents')
+async def get_llm_integrations() -> dict:
+    """
+    Discover llm integrations to choose one or multiple providers for the model used in agentic workflows.
+    """
+    return await get_data(LLM_PROVIDERS_DISCOVERY_URL, _headers())
