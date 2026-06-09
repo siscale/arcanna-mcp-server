@@ -3,11 +3,10 @@ from typing import Annotated, Callable, List, Optional, Union
 from pydantic import Field
 
 from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL, UPSERT_WORKFLOWS_URL, \
-    TEST_RUN_WORKFLOW_BY_ID_URL, TOOL_DISCOVERY_URL
+    TEST_RUN_WORKFLOW_BY_ID_URL, TOOL_DISCOVERY_URL, LLM_PROVIDERS_DISCOVERY_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.models.agentic.env_variable import EnvVariable
 from arcanna_mcp_server.models.agentic.workflow_settings import WorkflowSettings
-from arcanna_mcp_server.utils.agentic_model_env_variables_map import parse_env_variables_request
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.utils.post_data import post_data
 from arcanna_mcp_server.utils.get_data import get_data
@@ -29,7 +28,8 @@ def export_tools() -> List[Callable]:
         update_agentic_workflow,
         run_agentic_workflow,
         test_agentic_workflow,
-        agents_tool_discovery
+        agents_tool_discovery,
+        get_llm_integrations
     ]
 
 
@@ -99,11 +99,6 @@ async def test_agentic_workflow(
         workflow_input: Annotated[str, Field(description="Input for the agentic workflow.")],
         source_code: Annotated[str, Field(
             description="Python source code containing agent definitions.")],
-        env_variables: Annotated[
-            Optional[List[EnvVariable]], Field(description="Environment variables available to the workflow. Specify"
-                                                           " only the variable name and whether it is a secret. Values"
-                                                           " are resolved automatically from the environment at"
-                                                           " runtime.")] = None,
         session_id: Annotated[Optional[str], Field(description=(
                 "Workflow session ID. Provide this to continue an existing conversation; "
                 "omit to start a new session."
@@ -117,7 +112,6 @@ async def test_agentic_workflow(
         "user_input": workflow_input,
         "wait_for_completion": True,
         "source_code": source_code,
-        "env_variables": parse_env_variables_request(env_variables),
         "session_id": session_id,
     }
 
@@ -128,7 +122,6 @@ async def test_agentic_workflow(
 @requires_scope('write:agents')
 async def create_agentic_workflow(
         source_code: Annotated[str, Field(description="Python source code containing agent definitions. The root_agent's name and description become the workflow's name and description.")],
-        env_variables: Annotated[Optional[List[EnvVariable]], Field(description="Environment variables for the workflow.")] = None,
         settings: Annotated[Optional[WorkflowSettings], Field(description="Resource settings for the workflow.")] = None,
 ) -> dict:
     """
@@ -136,7 +129,6 @@ async def create_agentic_workflow(
     """
     payload = {
         "source_code": source_code,
-        "env_variables": parse_env_variables_request(env_variables),
         "settings": settings.model_dump() if settings else None,
     }
 
@@ -148,8 +140,6 @@ async def create_agentic_workflow(
 async def update_agentic_workflow(
         workflow_id: Annotated[str, Field(description="Unique identifier of the workflow to update.")],
         source_code: Annotated[str, Field(description="Python source code containing agent definitions. The root_agent's name and description become the workflow's name and description.")],
-        env_variables: Annotated[Optional[List[EnvVariable]], Field(description="Environment variables for the workflow."
-                                                                                " If not None, existing environment variables will be overwritten.")] = None,
         settings: Annotated[Optional[WorkflowSettings], Field(description="Resource settings for the workflow.")] = None,
 ) -> dict:
     """
@@ -158,7 +148,6 @@ async def update_agentic_workflow(
     payload = {
         "id": workflow_id,
         "source_code": source_code,
-        "env_variables": parse_env_variables_request(env_variables),
         "settings": settings.model_dump() if settings else None,
     }
 
@@ -169,6 +158,16 @@ async def update_agentic_workflow(
 @requires_scope('read:agents')
 async def agents_tool_discovery() -> dict:
     """
-    Discover tools for agents in agentic workflows. This function provides
+    Discover tools for agents in agentic workflows. These tools can be found in Arcanna's environment where agents run
+    and have access to them.
     """
     return await get_data(TOOL_DISCOVERY_URL, _headers())
+
+
+@handle_exceptions
+@requires_scope('read:agents')
+async def get_llm_integrations() -> dict:
+    """
+    Discover llm integrations to choose one or multiple providers for the model used in agentic workflows.
+    """
+    return await get_data(LLM_PROVIDERS_DISCOVERY_URL, _headers())
