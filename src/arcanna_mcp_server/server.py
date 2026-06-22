@@ -9,7 +9,7 @@ from arcanna_mcp_server.tools import attach_tools
 import os
 
 
-mcp = FastMCP("arcanna_mcp-server", port=os.getenv("PORT", 8000))
+mcp = FastMCP("arcanna_mcp-server", port=int(os.getenv("PORT") or 8000))
 
 attach_tools(mcp)
 attach_prompts(mcp)

@@ -3,9 +3,8 @@ from typing import Annotated, Callable, List, Optional, Union
 from pydantic import Field
 
 from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL, UPSERT_WORKFLOWS_URL, \
-    TEST_RUN_WORKFLOW_BY_ID_URL, TOOL_DISCOVERY_URL, LLM_PROVIDERS_DISCOVERY_URL
+    TEST_RUN_WORKFLOW_BY_ID_URL, TOOL_DISCOVERY_URL, LLM_PROVIDERS_DISCOVERY_URL, GET_WORKFLOW_BY_ID_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
-from arcanna_mcp_server.models.agentic.env_variable import EnvVariable
 from arcanna_mcp_server.models.agentic.workflow_settings import WorkflowSettings
 from arcanna_mcp_server.utils.exceptions_handler import handle_exceptions
 from arcanna_mcp_server.utils.post_data import post_data
@@ -60,14 +59,7 @@ async def get_agentic_workflow_by_id(
     """
     Fetch full details of an agentic workflow by its ID.
     """
-    response = await get_data(LIST_WORKFLOWS_URL, _headers())
-    entries = response.get("entries") or []
-    workflow = next((e for e in entries if str(e.get("id")) == str(workflow_id)), None)
-
-    if workflow is None:
-        raise ValueError(f"No agentic workflow found with id {workflow_id}")
-
-    return workflow
+    return await get_data(GET_WORKFLOW_BY_ID_URL.format(workflow_id), _headers())
 
 
 @handle_exceptions
