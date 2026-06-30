@@ -3,7 +3,7 @@ from typing import Annotated, Callable, List, Optional, Union
 from pydantic import Field
 
 from arcanna_mcp_server.constants import LIST_WORKFLOWS_URL, RUN_WORKFLOW_BY_ID_URL, UPSERT_WORKFLOWS_URL, \
-    TEST_RUN_WORKFLOW_BY_ID_URL, TOOL_DISCOVERY_URL, LLM_PROVIDERS_DISCOVERY_URL
+    TEST_RUN_WORKFLOW_BY_ID_URL, TOOL_DISCOVERY_URL, LLM_PROVIDERS_DISCOVERY_URL, GET_WORKFLOW_BY_ID_URL
 from arcanna_mcp_server.environment import MANAGEMENT_API_KEY
 from arcanna_mcp_server.models.agentic.env_variable import EnvVariable
 from arcanna_mcp_server.models.agentic.workflow_settings import WorkflowSettings
@@ -60,14 +60,7 @@ async def get_agentic_workflow_by_id(
     """
     Fetch full details of an agentic workflow by its ID.
     """
-    response = await get_data(LIST_WORKFLOWS_URL, _headers())
-    entries = response.get("entries") or []
-    workflow = next((e for e in entries if str(e.get("id")) == str(workflow_id)), None)
-
-    if workflow is None:
-        raise ValueError(f"No agentic workflow found with id {workflow_id}")
-
-    return workflow
+    return await get_data(GET_WORKFLOW_BY_ID_URL.format(workflow_id), _headers())
 
 
 @handle_exceptions
@@ -103,6 +96,7 @@ async def test_agentic_workflow(
                 "Workflow session ID. Provide this to continue an existing conversation; "
                 "omit to start a new session."
         ))] = None,
+        env_variables: Annotated[Optional[List[EnvVariable]], Field(description="Optional list of environment variables to inject into the workflow.")] = None,
 ):
     """
     Test an agentic workflow.
@@ -113,6 +107,7 @@ async def test_agentic_workflow(
         "wait_for_completion": True,
         "source_code": source_code,
         "session_id": session_id,
+        "env_variables": [v.model_dump() for v in env_variables] if env_variables else None,
     }
 
     return await post_data(TEST_RUN_WORKFLOW_BY_ID_URL, _headers(), payload)
@@ -123,6 +118,7 @@ async def test_agentic_workflow(
 async def create_agentic_workflow(
         source_code: Annotated[str, Field(description="Python source code containing agent definitions. The root_agent's name and description become the workflow's name and description.")],
         settings: Annotated[Optional[WorkflowSettings], Field(description="Resource settings for the workflow.")] = None,
+        env_variables: Annotated[Optional[List[EnvVariable]], Field(description="Optional list of environment variables to inject into the workflow.")] = None,
 ) -> dict:
     """
     Create an agentic workflow with the provided configuration.
@@ -130,6 +126,7 @@ async def create_agentic_workflow(
     payload = {
         "source_code": source_code,
         "settings": settings.model_dump() if settings else None,
+        "env_variables": [v.model_dump() for v in env_variables] if env_variables else None,
     }
 
     return await post_data(UPSERT_WORKFLOWS_URL, _headers(), payload)
@@ -141,6 +138,8 @@ async def update_agentic_workflow(
         workflow_id: Annotated[str, Field(description="Unique identifier of the workflow to update.")],
         source_code: Annotated[str, Field(description="Python source code containing agent definitions. The root_agent's name and description become the workflow's name and description.")],
         settings: Annotated[Optional[WorkflowSettings], Field(description="Resource settings for the workflow.")] = None,
+        env_variables: Annotated[Optional[List[EnvVariable]], Field(description="Optional list of environment variables to inject into the workflow."
+                                                                                " Leave null to not override existing variables. If provided an array, it will replace the existing environment variables.")] = None,
 ) -> dict:
     """
     Update an existing agentic workflow with the provided configuration.
@@ -149,6 +148,7 @@ async def update_agentic_workflow(
         "id": workflow_id,
         "source_code": source_code,
         "settings": settings.model_dump() if settings else None,
+        "env_variables": [v.model_dump() for v in env_variables] if env_variables else None,
     }
 
     return await post_data(UPSERT_WORKFLOWS_URL, _headers(), payload)
