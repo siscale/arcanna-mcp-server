@@ -43,62 +43,74 @@ Desktop).
 }
 ```
 
+## Servers
 
-## Features
-- **Resource Management**: Create, update and retrieve Arcanna resources (jobs, integrations)
-- **Python Coding**: Code generation, execution and saving the code block as an Arcanna integration
-- **Query Arcanna events**: Query events processed by Arcanna
-- **Job Management**: Create, retrieve, start, stop, and train jobs
-- **Feedback System**: Provide feedback on decisions to improve model accuracy
-- **Health Monitoring**: Check server and API key status
+One package, three MCP servers. Install once; each executable is a separate server, so a client attaches only
+what it needs. All three use the same environment (`ARCANNA_HOST`, `ARCANNA_MANAGEMENT_API_KEY`, optional
+`ARCANNA_AGENTS_HOST`, `TRANSPORT_MODE=stdio|sse`, `PORT` for sse). Tools are filtered by the API key's scopes.
+
+| Executable | MCP name | Covers |
+|---|---|---|
+| `arcanna-mcp-server` | `arcanna` | Jobs, integrations, events, feedback, buckets, metrics, IaC, roles, platform, code blocks |
+| `arcanna-agents-mcp` | `arcanna-agents` | Agentic workflows: create, update, run, human-in-the-loop sessions |
+| `arcanna-rag-mcp` | `arcanna-rag` | RAG documents, collections and tags |
+
+Docker: the image's entrypoint is `arcanna-mcp-server`; run another server with e.g.
+`docker run -i --rm --entrypoint arcanna-agents-mcp -e ARCANNA_HOST -e ARCANNA_MANAGEMENT_API_KEY arcanna/arcanna-mcp-server`.
 
 ## Tools
 
-### Query Arcanna events
-- **query_arcanna_events**
-  - Used to get events processed by Arcanna, multiple filters can be provided
+### arcanna-mcp-server
+- **jobs**: `start_job`, `stop_job`, `train_job`, `get_job_status`, `get_job_input_state`, `reset_job_input_state`, `submit_training_config_validation`, `get_training_config_validation`, `list_training_config_validations`, `cancel_training_config_validation`
+- **resources**: `search_integrations`, `get_integration_details`, `search_jobs`, `get_job_details`, `list_integration_types`, `get_integration_type_metadata`, `get_job_category_metadata`, `create_integration`, `update_integration`, `delete_integration`, `create_job`, `update_job`, `delete_job`, `check_integration_health`, `list_llm_models`, `get_job_decision_points`, `apply_iac`, `export_iac`, `get_roles`, `upsert_roles`, `delete_roles`
+- **events**: `query_arcanna_events`, `count_events`, `get_field_stats`, `get_field_groups`, `get_filter_fields`, `get_fields_mapping`, `get_event_explanation`, `get_similar_events`, `get_event_agentic_workflows`, `get_job_outliers`, `add_feedback_to_event`, `clear_event_feedback`, `add_agentic_notes`, `reprocess_events`, `reprocess_event_by_id`, `delete_events`, `ingest_event`, `export_event_by_id`, `transfer_event`
+- **buckets**: `query_buckets`, `get_bucket`, `get_similar_buckets`, `reprocess_buckets`, `request_bucket_model_update`, `request_bucket_model_update_by_filters`, `approve_bucket_feedback`, `update_bucket_feedback_state`, `delete_buckets`
+- **metrics**: `get_job_metrics`, `get_job_and_model_metrics`, `get_model_metrics`, `request_model_metrics_recompute`, `get_platform_metrics`, `get_internal_metrics`, `get_field_metrics`, `export_feedback`, `set_production_date`
+- **platform**: `health_check`, `get_platform_info`, `get_system_timestamp`, `delete_storage_data`
+- **code_blocks**: `generate_code_instructions`, `execute_code`, `execute_code_async`, `save_code`
 
-- **get_filter_fields**
-  - used as a helper tool (retrieve Arcanna possible fields to apply filters on)
+### arcanna-agents-mcp
+- **workflows**: `list_agentic_workflows`, `get_agentic_workflow_by_id`, `create_agentic_workflow`, `update_agentic_workflow`, `run_agentic_workflow`, `test_agentic_workflow`, `list_agent_tools`, `list_llm_providers`, `get_workflow_session`, `answer_workflow_decision`, `continue_workflow_session`, `stop_workflow_sessions`
 
-### Resource Management
-- **upsert_resources**
-  - Create/update Arcanna resources
+### arcanna-rag-mcp
+- **documents**: `query_rag_documents`, `get_rag_document`, `upload_rag_documents`, `update_rag_document`, `delete_rag_document`, `approve_rag_document`, `reject_rag_document`, `retry_rag_document`, `get_rag_pipeline_status`
+- **collections**: `query_rag_collections`, `create_rag_collection`, `update_rag_collection`, `delete_rag_collection`, `create_rag_subcollection`, `update_rag_subcollection`, `delete_rag_subcollection`, `list_rag_tags`
 
-- **get_resources**
-  - Retrieve Arcanna resources (jobs/integrations)
+## Breaking changes in 0.2.0
 
-- **delete_resources**
-  - Delete Arcanna resources
+The single server was split into three and tools were renamed or replaced. Tool names referenced in roles,
+assistant tool settings or agentic workflows must be updated by hand:
 
-- **integration_parameters_schema**
-  - used in this context as a helper tool
+| Removed / renamed | Use instead |
+|---|---|
+| `upsert_resources` | `create_integration / update_integration / create_job / update_job` |
+| `get_resources` | `search_integrations / search_jobs / get_integration_details / get_job_details` |
+| `delete_resources` | `delete_integration / delete_job` |
+| `integration_parameters_schema` | `get_integration_type_metadata` |
+| `setup_integration` | `create_integration` |
+| `setup_job` | `create_job` |
+| `metrics_job` | `get_job_metrics` |
+| `metrics_job_and_latest_model` | `get_job_and_model_metrics` |
+| `metrics_model` | `get_model_metrics` |
+| `metrics_model_request_recompute_metrics` | `request_model_metrics_recompute` |
+| `agents_tool_discovery` | `list_agent_tools` |
+| `get_llm_integrations` | `list_llm_providers` |
 
-### Python Coding
-- **generate_code_agent**
-  - Used to generate code
+Agentic tools moved from the `arcanna` server to `arcanna-agents`. `execute_code` now runs a saved code
+block integration on a stored event (the inline test endpoint no longer exists); `save_code` saves through IaC.
 
-- **execute_code**
-  - Used to execute the generated code
+## Development
 
-- **save_code**
-  - Use to save the code block in Arcanna pipeline as an integration
+```
+venv/bin/uv sync
+.venv/bin/python -m pytest -q tests
+.venv/bin/python -m pyright src
+```
 
-### Job Management
-- **start_job**
-  - Begin event ingestion for a job
+Tools are generated from the Arcanna OpenAPI specs, then trimmed by hand:
 
-- **stop_job**
-  - Stop event ingestion for a job
-
-- **train_job**
-  - Train the job's AI model using the provided feedback
-
-### Feedback System
-- **add_feedback_to_event**
-  - Provide feedback on AI decisions for model improvement
-
-### System Health
-- **health_check**
-  - Verify server status and Management API key validity
-  - Returns Management API key authorization status
+1. Refresh the specs from a modular-framework checkout (see `scripts/dump_specs.py`).
+2. Map the tool in `scripts/tool_map.py` (server, module, operationId, scopes).
+3. `.venv/bin/python scripts/gen_tools.py` appends a stub to the module; add it to `export_tools()` and trim
+   the docstring to: what it does, when to use it vs its neighbour, response shape, cost, and what not to use
+   it for. `tests/test_tools.py` checks mapping, scopes, descriptions, docstring length and the called endpoint.
