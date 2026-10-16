@@ -1,0 +1,6536 @@
+{
+ "components": {
+  "schemas": {
+   "AvailableModel": {
+    "properties": {
+     "id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Model identifier as expected by the provider",
+      "title": "Id"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Human readable model name",
+      "title": "Name"
+     },
+     "provider": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Provider of the model",
+      "title": "Provider"
+     }
+    },
+    "title": "AvailableModel",
+    "type": "object"
+   },
+   "BaseResponse": {
+    "properties": {
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     }
+    },
+    "title": "BaseResponse",
+    "type": "object"
+   },
+   "DebugConfig": {
+    "description": "Model-input breakpoints \u2014 the only debug mode. Each listed agent pauses right before it\ncalls the model, holding the real assembled request (after the agent's own\nbefore_model_callback) so it can be inspected and edited, then resumed via /continue.",
+    "properties": {
+     "breakpoint_agents": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Agent names to pause before their model call. Empty/None disables debug.",
+      "title": "Breakpoint Agents"
+     },
+     "enabled": {
+      "default": false,
+      "description": "Enable model-input breakpoints for this run.",
+      "title": "Enabled",
+      "type": "boolean"
+     }
+    },
+    "title": "DebugConfig",
+    "type": "object"
+   },
+   "DecisionTarget": {
+    "enum": [
+     "agent",
+     "tool_call"
+    ],
+    "title": "DecisionTarget",
+    "type": "string"
+   },
+   "EnvVariable": {
+    "properties": {
+     "is_secret": {
+      "default": false,
+      "description": "Weather or not the variable is a secret",
+      "title": "Is Secret",
+      "type": "boolean"
+     },
+     "name": {
+      "description": "name of the variable",
+      "title": "Name",
+      "type": "string"
+     },
+     "should_encrypt": {
+      "default": false,
+      "description": "Should the var be encrypted",
+      "title": "Should Encrypt",
+      "type": "boolean"
+     },
+     "value": {
+      "description": "value of the variable",
+      "title": "Value",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "value"
+    ],
+    "title": "EnvVariable",
+    "type": "object"
+   },
+   "EvalRunRequest": {
+    "properties": {
+     "criteria": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "additionalProperties": true,
+         "type": "object"
+        }
+       ]
+      },
+      "default": {
+       "response_match_score": 0.8,
+       "tool_trajectory_avg_score": 1.0
+      },
+      "description": "Metric name to threshold or criterion object. E.g. {\"tool_trajectory_avg_score\": 1.0, \"response_match_score\": 0.8}",
+      "title": "Criteria",
+      "type": "object"
+     },
+     "eval_case_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Optional list of eval case IDs to run. If omitted, all cases in the eval set are evaluated.",
+      "title": "Eval Case Ids"
+     },
+     "eval_set": {
+      "additionalProperties": true,
+      "description": "EvalSet definition following the ADK EvalSet JSON schema. Must contain eval_set_id and eval_cases[].",
+      "title": "Eval Set",
+      "type": "object"
+     },
+     "workflow_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Workflow name to evaluate. When provided, the workflow is looked up by name instead of by the workflow_id path parameter.",
+      "title": "Workflow Name"
+     }
+    },
+    "required": [
+     "eval_set"
+    ],
+    "title": "EvalRunRequest",
+    "type": "object"
+   },
+   "EvalRunResponse": {
+    "properties": {
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "results": {
+      "default": [],
+      "description": "List of EvalCaseResult objects serialized to dicts.",
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "title": "Results",
+      "type": "array"
+     }
+    },
+    "title": "EvalRunResponse",
+    "type": "object"
+   },
+   "ExtractedGraph-Input": {
+    "description": "Code-extracted view of an adk 2.x `Workflow`.\n\nThe structural half of the 2.x plan: what the nodes are and how they are\nwired. The editable half \u2014 the agents' instructions, models and sub-trees \u2014\nis `ExtractedNode`, keyed by node name, and comes from the source rather than\nfrom the runtime (an evaluated `model=` has already resolved its credentials\nand lost the integration it came from).",
+    "properties": {
+     "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+     },
+     "edges": {
+      "items": {
+       "$ref": "#/components/schemas/ExtractedGraphEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+     },
+     "max_concurrency": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Cap on graph-scheduled nodes running at once. `None` means unlimited. Dynamic `ctx.run_node()` children are exempt.",
+      "title": "Max Concurrency"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "nodes": {
+      "items": {
+       "$ref": "#/components/schemas/ExtractedGraphNode-Input"
+      },
+      "title": "Nodes",
+      "type": "array"
+     },
+     "rerun_on_resume": {
+      "default": true,
+      "title": "Rerun On Resume",
+      "type": "boolean"
+     },
+     "state_schema": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Name of the model every `ctx.state` write is validated against.",
+      "title": "State Schema"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "ExtractedGraph",
+    "type": "object"
+   },
+   "ExtractedGraph-Output": {
+    "description": "Code-extracted view of an adk 2.x `Workflow`.\n\nThe structural half of the 2.x plan: what the nodes are and how they are\nwired. The editable half \u2014 the agents' instructions, models and sub-trees \u2014\nis `ExtractedNode`, keyed by node name, and comes from the source rather than\nfrom the runtime (an evaluated `model=` has already resolved its credentials\nand lost the integration it came from).",
+    "properties": {
+     "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+     },
+     "edges": {
+      "items": {
+       "$ref": "#/components/schemas/ExtractedGraphEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+     },
+     "max_concurrency": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Cap on graph-scheduled nodes running at once. `None` means unlimited. Dynamic `ctx.run_node()` children are exempt.",
+      "title": "Max Concurrency"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "nodes": {
+      "items": {
+       "$ref": "#/components/schemas/ExtractedGraphNode-Output"
+      },
+      "title": "Nodes",
+      "type": "array"
+     },
+     "rerun_on_resume": {
+      "default": true,
+      "title": "Rerun On Resume",
+      "type": "boolean"
+     },
+     "state_schema": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Name of the model every `ctx.state` write is validated against.",
+      "title": "State Schema"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "ExtractedGraph",
+    "type": "object"
+   },
+   "ExtractedGraphEdge": {
+    "description": "One edge, as adk normalized it.\n\n`Workflow.edges` accepts chains, routing maps, fan-out/fan-in tuples and\nexplicit `Edge(...)`; all of them expand to this flat form before the graph\nruns, so this is what the diagram draws.",
+    "properties": {
+     "from_node": {
+      "description": "Source node name. `\"__START__\"` is the graph's seed sentinel.",
+      "title": "From Node",
+      "type": "string"
+     },
+     "route": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "boolean"
+       },
+       {
+        "items": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "integer"
+          },
+          {
+           "type": "boolean"
+          }
+         ]
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "`None` for an unconditional edge, always followed. A value (or list of values) means the edge is taken only when the source node emits a matching route. `\"__DEFAULT__\"` is the fallback edge, taken when no specific route matched.",
+      "title": "Route"
+     },
+     "to_node": {
+      "title": "To Node",
+      "type": "string"
+     }
+    },
+    "required": [
+     "from_node",
+     "to_node"
+    ],
+    "title": "ExtractedGraphEdge",
+    "type": "object"
+   },
+   "ExtractedGraphNode-Input": {
+    "description": "One node of an adk 2.x `Workflow` graph.\n\nRead off the live object, so `name` is the name adk resolved \u2014 a `BaseTool`\nnode is named after its tool, a bare callable after its function \u2014 which is\nalso the key the CST-extracted agent payload and the observability spans are\njoined on.",
+    "properties": {
+     "class_name": {
+      "description": "Runtime class name, for display only. User-defined for a `Node` subclass, which is why `node_kind` is the closed enum to switch on.",
+      "title": "Class Name",
+      "type": "string"
+     },
+     "config": {
+      "$ref": "#/components/schemas/GraphNodeConfig"
+     },
+     "description": {
+      "default": "",
+      "description": "`description=` for a node that declares one; for a function node adk falls back to the function's docstring.",
+      "title": "Description",
+      "type": "string"
+     },
+     "editable": {
+      "default": false,
+      "description": "True only for `agent` nodes, the sole kind with a source-level `ExtractedNode` payload. Every other kind is code-only: it is rendered from this data and edited in the code tab.",
+      "title": "Editable",
+      "type": "boolean"
+     },
+     "loop_max_rounds": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "For a generated loop gate, the round cap held in its `LOOP_<NAME>_MAX_ROUNDS` constant. `None` for every other node, and for a gate whose cap is not a plain integer constant \u2014 which is also what tells the diagram there is no cap it can safely rewrite.",
+      "title": "Loop Max Rounds"
+     },
+     "name": {
+      "description": "Unique within its graph; adk rejects duplicates.",
+      "title": "Name",
+      "type": "string"
+     },
+     "node_kind": {
+      "enum": [
+       "start",
+       "agent",
+       "function",
+       "tool",
+       "join",
+       "parallelworker",
+       "workflow",
+       "custom",
+       "unknown"
+      ],
+      "title": "Node Kind",
+      "type": "string"
+     },
+     "subgraph": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ExtractedGraph-Input"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "For a nested `Workflow` node, its own graph. `None` for every other kind, and for a workflow already being walked."
+     },
+     "template": {
+      "anyOf": [
+       {
+        "discriminator": {
+         "mapping": {
+          "function_node": "#/components/schemas/FunctionNodeTemplate",
+          "loop_gate": "#/components/schemas/LoopGateTemplate",
+          "route_node": "#/components/schemas/RouteNodeTemplate",
+          "shared_import": "#/components/schemas/SharedImportTemplate"
+         },
+         "propertyName": "kind"
+        },
+        "oneOf": [
+         {
+          "$ref": "#/components/schemas/LoopGateTemplate"
+         },
+         {
+          "$ref": "#/components/schemas/FunctionNodeTemplate"
+         },
+         {
+          "$ref": "#/components/schemas/RouteNodeTemplate"
+         },
+         {
+          "$ref": "#/components/schemas/SharedImportTemplate"
+         }
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Write-path only: how to generate a node the source does not define yet, tagged by `kind`. Never set when reading a graph \u2014 an existing node is described by what it is, not by what would have created it.",
+      "title": "Template"
+     }
+    },
+    "required": [
+     "name",
+     "node_kind",
+     "class_name"
+    ],
+    "title": "ExtractedGraphNode",
+    "type": "object"
+   },
+   "ExtractedGraphNode-Output": {
+    "description": "One node of an adk 2.x `Workflow` graph.\n\nRead off the live object, so `name` is the name adk resolved \u2014 a `BaseTool`\nnode is named after its tool, a bare callable after its function \u2014 which is\nalso the key the CST-extracted agent payload and the observability spans are\njoined on.",
+    "properties": {
+     "class_name": {
+      "description": "Runtime class name, for display only. User-defined for a `Node` subclass, which is why `node_kind` is the closed enum to switch on.",
+      "title": "Class Name",
+      "type": "string"
+     },
+     "config": {
+      "$ref": "#/components/schemas/GraphNodeConfig"
+     },
+     "description": {
+      "default": "",
+      "description": "`description=` for a node that declares one; for a function node adk falls back to the function's docstring.",
+      "title": "Description",
+      "type": "string"
+     },
+     "editable": {
+      "default": false,
+      "description": "True only for `agent` nodes, the sole kind with a source-level `ExtractedNode` payload. Every other kind is code-only: it is rendered from this data and edited in the code tab.",
+      "title": "Editable",
+      "type": "boolean"
+     },
+     "loop_max_rounds": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "For a generated loop gate, the round cap held in its `LOOP_<NAME>_MAX_ROUNDS` constant. `None` for every other node, and for a gate whose cap is not a plain integer constant \u2014 which is also what tells the diagram there is no cap it can safely rewrite.",
+      "title": "Loop Max Rounds"
+     },
+     "name": {
+      "description": "Unique within its graph; adk rejects duplicates.",
+      "title": "Name",
+      "type": "string"
+     },
+     "node_kind": {
+      "enum": [
+       "start",
+       "agent",
+       "function",
+       "tool",
+       "join",
+       "parallelworker",
+       "workflow",
+       "custom",
+       "unknown"
+      ],
+      "title": "Node Kind",
+      "type": "string"
+     },
+     "subgraph": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ExtractedGraph-Output"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "For a nested `Workflow` node, its own graph. `None` for every other kind, and for a workflow already being walked."
+     },
+     "template": {
+      "anyOf": [
+       {
+        "discriminator": {
+         "mapping": {
+          "function_node": "#/components/schemas/FunctionNodeTemplate",
+          "loop_gate": "#/components/schemas/LoopGateTemplate",
+          "route_node": "#/components/schemas/RouteNodeTemplate",
+          "shared_import": "#/components/schemas/SharedImportTemplate"
+         },
+         "propertyName": "kind"
+        },
+        "oneOf": [
+         {
+          "$ref": "#/components/schemas/LoopGateTemplate"
+         },
+         {
+          "$ref": "#/components/schemas/FunctionNodeTemplate"
+         },
+         {
+          "$ref": "#/components/schemas/RouteNodeTemplate"
+         },
+         {
+          "$ref": "#/components/schemas/SharedImportTemplate"
+         }
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Write-path only: how to generate a node the source does not define yet, tagged by `kind`. Never set when reading a graph \u2014 an existing node is described by what it is, not by what would have created it.",
+      "title": "Template"
+     }
+    },
+    "required": [
+     "name",
+     "node_kind",
+     "class_name"
+    ],
+    "title": "ExtractedGraphNode",
+    "type": "object"
+   },
+   "ExtractedNode-Input": {
+    "description": "A single node in the extracted workflow tree.\n\nThe same shape covers leaf agents (`LlmAgent`, `HITLAgent`) and wrapper\nagents (`SequentialAgent`, `ParallelAgent`, `LoopAgent`). `kind` says\nwhich one. Wrapper-only and leaf-only fields stay at their defaults\nwhen they don't apply.\n\nTree position is the only structural information: a node is a child of\nwhichever node holds it in `sub_agents`. There is no `parent_wrapper`,\nno `step`, no `dependencies` \u2014 siblings in a `SequentialAgent` run in\nlist order, siblings in a `ParallelAgent` fan out.",
+    "properties": {
+     "agents_as_tools": {
+      "description": "Agents exposed to this LlmAgent as callable tools. Each is rendered as `AgentTool(<agent>)` inside `tools=[...]`. LlmAgent only; empty for every other kind.",
+      "items": {
+       "$ref": "#/components/schemas/ExtractedNode-Input"
+      },
+      "title": "Agents As Tools",
+      "type": "array"
+     },
+     "description": {
+      "default": "",
+      "description": "Source form of `description=`. Applies to LlmAgent and the wrapper kinds (Sequential/Parallel/LoopAgent); empty for HITL and shared leaves.",
+      "title": "Description",
+      "type": "string"
+     },
+     "has_model": {
+      "default": false,
+      "description": "True when the source LlmAgent/HITLAgent call carries a `model=` kwarg. False means the agent has no model field defined in code. Disambiguates `model=None`, which is None both when no `model=` is present and when the model can't be mapped to a `SelectedModel` (legacy/non-conforming form).",
+      "title": "Has Model",
+      "type": "boolean"
+     },
+     "instruction": {
+      "default": "",
+      "description": "Source form of `instruction=` (LlmAgent only).",
+      "title": "Instruction",
+      "type": "string"
+     },
+     "kind": {
+      "description": "Which ADK class the node represents.",
+      "enum": [
+       "LlmAgent",
+       "SequentialAgent",
+       "ParallelAgent",
+       "LoopAgent",
+       "HITLAgent",
+       "CustomAgent"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "max_iterations": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "`max_iterations=` for LoopAgent. `None` means no cap.",
+      "title": "Max Iterations"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/webservices__agents_exposer__workflow_lib__workflow_plan__selected_model__SelectedModel"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Selected model"
+     },
+     "name": {
+      "description": "Agent name. For `LlmAgent` matches `LlmAgent.name`. For HITL the constant `hitl_agent`. For wrappers the wrapper's `name=` kwarg. For shared imports the imported variable name.",
+      "title": "Name",
+      "type": "string"
+     },
+     "original_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The name this node carried in the source it was parsed from, when the caller kept it. Sent back on a rename so the edit can be paired with the call it came from: without it a renamed node looks like a new one, and is rebuilt instead of renamed \u2014 losing the author's formatting, their comments and the binding's place in the file. Leave unset and that older behaviour applies.",
+      "title": "Original Name"
+     },
+     "output_key": {
+      "default": "",
+      "description": "Source form of `output_key=` (LlmAgent only).",
+      "title": "Output Key",
+      "type": "string"
+     },
+     "read_only": {
+      "default": false,
+      "description": "True when the node's constructor is not one the editor can author \u2014 a user-defined `BaseAgent` subclass. It is rendered and preserved verbatim on regeneration, never rewritten.",
+      "title": "Read Only",
+      "type": "boolean"
+     },
+     "shared": {
+      "default": false,
+      "description": "True when the node is referenced by an imported name (e.g. `from shared import x`) rather than constructed locally. Other fields are not extractable from source for shared nodes.",
+      "title": "Shared",
+      "type": "boolean"
+     },
+     "sub_agents": {
+      "description": "Children for wrapper kinds and LlmAgent coordinators. Always empty for HITLAgent and shared leaves.",
+      "items": {
+       "$ref": "#/components/schemas/ExtractedNode-Input"
+      },
+      "title": "Sub Agents",
+      "type": "array"
+     },
+     "tools": {
+      "description": "Source form of each element in `tools=[...]` (LlmAgent only).",
+      "items": {
+       "type": "string"
+      },
+      "title": "Tools",
+      "type": "array"
+     }
+    },
+    "required": [
+     "name",
+     "kind"
+    ],
+    "title": "ExtractedNode",
+    "type": "object"
+   },
+   "ExtractedNode-Output": {
+    "description": "A single node in the extracted workflow tree.\n\nThe same shape covers leaf agents (`LlmAgent`, `HITLAgent`) and wrapper\nagents (`SequentialAgent`, `ParallelAgent`, `LoopAgent`). `kind` says\nwhich one. Wrapper-only and leaf-only fields stay at their defaults\nwhen they don't apply.\n\nTree position is the only structural information: a node is a child of\nwhichever node holds it in `sub_agents`. There is no `parent_wrapper`,\nno `step`, no `dependencies` \u2014 siblings in a `SequentialAgent` run in\nlist order, siblings in a `ParallelAgent` fan out.",
+    "properties": {
+     "agents_as_tools": {
+      "description": "Agents exposed to this LlmAgent as callable tools. Each is rendered as `AgentTool(<agent>)` inside `tools=[...]`. LlmAgent only; empty for every other kind.",
+      "items": {
+       "$ref": "#/components/schemas/ExtractedNode-Output"
+      },
+      "title": "Agents As Tools",
+      "type": "array"
+     },
+     "description": {
+      "default": "",
+      "description": "Source form of `description=`. Applies to LlmAgent and the wrapper kinds (Sequential/Parallel/LoopAgent); empty for HITL and shared leaves.",
+      "title": "Description",
+      "type": "string"
+     },
+     "has_model": {
+      "default": false,
+      "description": "True when the source LlmAgent/HITLAgent call carries a `model=` kwarg. False means the agent has no model field defined in code. Disambiguates `model=None`, which is None both when no `model=` is present and when the model can't be mapped to a `SelectedModel` (legacy/non-conforming form).",
+      "title": "Has Model",
+      "type": "boolean"
+     },
+     "instruction": {
+      "default": "",
+      "description": "Source form of `instruction=` (LlmAgent only).",
+      "title": "Instruction",
+      "type": "string"
+     },
+     "kind": {
+      "description": "Which ADK class the node represents.",
+      "enum": [
+       "LlmAgent",
+       "SequentialAgent",
+       "ParallelAgent",
+       "LoopAgent",
+       "HITLAgent",
+       "CustomAgent"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "max_iterations": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "`max_iterations=` for LoopAgent. `None` means no cap.",
+      "title": "Max Iterations"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/webservices__agents_exposer__workflow_lib__workflow_plan__selected_model__SelectedModel"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Selected model"
+     },
+     "name": {
+      "description": "Agent name. For `LlmAgent` matches `LlmAgent.name`. For HITL the constant `hitl_agent`. For wrappers the wrapper's `name=` kwarg. For shared imports the imported variable name.",
+      "title": "Name",
+      "type": "string"
+     },
+     "original_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The name this node carried in the source it was parsed from, when the caller kept it. Sent back on a rename so the edit can be paired with the call it came from: without it a renamed node looks like a new one, and is rebuilt instead of renamed \u2014 losing the author's formatting, their comments and the binding's place in the file. Leave unset and that older behaviour applies.",
+      "title": "Original Name"
+     },
+     "output_key": {
+      "default": "",
+      "description": "Source form of `output_key=` (LlmAgent only).",
+      "title": "Output Key",
+      "type": "string"
+     },
+     "read_only": {
+      "default": false,
+      "description": "True when the node's constructor is not one the editor can author \u2014 a user-defined `BaseAgent` subclass. It is rendered and preserved verbatim on regeneration, never rewritten.",
+      "title": "Read Only",
+      "type": "boolean"
+     },
+     "shared": {
+      "default": false,
+      "description": "True when the node is referenced by an imported name (e.g. `from shared import x`) rather than constructed locally. Other fields are not extractable from source for shared nodes.",
+      "title": "Shared",
+      "type": "boolean"
+     },
+     "sub_agents": {
+      "description": "Children for wrapper kinds and LlmAgent coordinators. Always empty for HITLAgent and shared leaves.",
+      "items": {
+       "$ref": "#/components/schemas/ExtractedNode-Output"
+      },
+      "title": "Sub Agents",
+      "type": "array"
+     },
+     "tools": {
+      "description": "Source form of each element in `tools=[...]` (LlmAgent only).",
+      "items": {
+       "type": "string"
+      },
+      "title": "Tools",
+      "type": "array"
+     }
+    },
+    "required": [
+     "name",
+     "kind"
+    ],
+    "title": "ExtractedNode",
+    "type": "object"
+   },
+   "ExtractedWorkflow-Input": {
+    "description": "Code-extracted view of a workflow module.\n\nProduced by `code_to_plan`, consumed by `plan_to_code`. Single tree\nrooted at `root` \u2014 typically a wrapper agent, but can be a single leaf\nif the module assigns a bare `LlmAgent` to `root_agent`.",
+    "properties": {
+     "root": {
+      "$ref": "#/components/schemas/ExtractedNode-Input",
+      "description": "The workflow's root agent."
+     }
+    },
+    "required": [
+     "root"
+    ],
+    "title": "ExtractedWorkflow",
+    "type": "object"
+   },
+   "ExtractedWorkflow-Output": {
+    "description": "Code-extracted view of a workflow module.\n\nProduced by `code_to_plan`, consumed by `plan_to_code`. Single tree\nrooted at `root` \u2014 typically a wrapper agent, but can be a single leaf\nif the module assigns a bare `LlmAgent` to `root_agent`.",
+    "properties": {
+     "root": {
+      "$ref": "#/components/schemas/ExtractedNode-Output",
+      "description": "The workflow's root agent."
+     }
+    },
+    "required": [
+     "root"
+    ],
+    "title": "ExtractedWorkflow",
+    "type": "object"
+   },
+   "FunctionCall": {
+    "properties": {
+     "args": {
+      "title": "Args",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "args",
+     "name"
+    ],
+    "title": "FunctionCall",
+    "type": "object"
+   },
+   "FunctionNodeTemplate": {
+    "description": "What to generate for a function node the diagram is creating.\n\nCarries nothing but its kind. A function node is a step written in Python, and\nwhat that step *does* is exactly the part a diagram cannot express \u2014 so the\ntemplate has no knobs: it produces a passthrough, and the body is the user's\nto write in the Code tab.",
+    "properties": {
+     "kind": {
+      "const": "function_node",
+      "default": "function_node",
+      "title": "Kind",
+      "type": "string"
+     }
+    },
+    "title": "FunctionNodeTemplate",
+    "type": "object"
+   },
+   "FunctionResponse": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "response": {
+      "additionalProperties": true,
+      "title": "Response",
+      "type": "object"
+     }
+    },
+    "required": [
+     "id",
+     "response",
+     "name"
+    ],
+    "title": "FunctionResponse",
+    "type": "object"
+   },
+   "GenerateEvalSetResponse": {
+    "properties": {
+     "eval_set": {
+      "additionalProperties": true,
+      "description": "Generated EvalSet containing one eval case, serialized to dict. Can be passed directly to the evaluate endpoint.",
+      "title": "Eval Set",
+      "type": "object"
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     }
+    },
+    "required": [
+     "eval_set"
+    ],
+    "title": "GenerateEvalSetResponse",
+    "type": "object"
+   },
+   "GenericStatus": {
+    "properties": {
+     "status": {
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "status"
+    ],
+    "title": "GenericStatus",
+    "type": "object"
+   },
+   "GraphNodeConfig": {
+    "description": "Per-node settings adk applied, whether written by hand or defaulted.\n\nEverything here is read-only in the diagram: it is set by decorator kwargs,\n`Node` subclass fields, or adk's own wiring, none of which the plan editor\nauthors. Only the values actually set are persisted; the rest default here.",
+    "properties": {
+     "input_schema": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Name of the pydantic model adk validates this node's input against. Graph validation requires the upstream output_schema to match.",
+      "title": "Input Schema"
+     },
+     "max_parallel_workers": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Max Parallel Workers"
+     },
+     "mode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "LlmAgent mode as adk resolved it \u2014 `single_turn` for a standalone graph node, `chat` for one attached to a parent agent.",
+      "title": "Mode"
+     },
+     "output_schema": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Output Schema"
+     },
+     "parameter_binding": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "`state` binds the function's parameters from ctx.state, `node_input` from the node input.",
+      "title": "Parameter Binding"
+     },
+     "rerun_on_resume": {
+      "default": false,
+      "description": "Re-run the node body on resume instead of treating the resume payload as its output.",
+      "title": "Rerun On Resume",
+      "type": "boolean"
+     },
+     "retry_config": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/RetryPolicy"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "state_schema": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Name of the schema that shadows the workflow's for this node and its descendants.",
+      "title": "State Schema"
+     },
+     "timeout": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Seconds before the node is cancelled and raised as NodeTimeoutError. Retried like any other failure.",
+      "title": "Timeout"
+     },
+     "wait_for_output": {
+      "default": false,
+      "title": "Wait For Output",
+      "type": "boolean"
+     }
+    },
+    "title": "GraphNodeConfig",
+    "type": "object"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "title": "Detail",
+      "type": "array"
+     }
+    },
+    "title": "HTTPValidationError",
+    "type": "object"
+   },
+   "HealthcheckResponse": {
+    "properties": {
+     "status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status"
+     }
+    },
+    "title": "HealthcheckResponse",
+    "type": "object"
+   },
+   "HitlAgentDecision": {
+    "enum": [
+     "approve",
+     "reject"
+    ],
+    "title": "HitlAgentDecision",
+    "type": "string"
+   },
+   "LLMProvider": {
+    "properties": {
+     "available_models": {
+      "default": [],
+      "description": "Models available on the integration",
+      "items": {
+       "$ref": "#/components/schemas/AvailableModel"
+      },
+      "title": "Available Models",
+      "type": "array"
+     },
+     "integration_id": {
+      "description": "Id of the LLM integration",
+      "title": "Integration Id",
+      "type": "string"
+     },
+     "provider": {
+      "description": "Connector type of the LLM integration",
+      "title": "Provider",
+      "type": "string"
+     }
+    },
+    "required": [
+     "integration_id",
+     "provider"
+    ],
+    "title": "LLMProvider",
+    "type": "object"
+   },
+   "Limits": {
+    "properties": {
+     "cpu_time_limits_seconds": {
+      "default": 3,
+      "title": "Cpu Time Limits Seconds",
+      "type": "integer"
+     },
+     "memory_limits_mb": {
+      "default": 30,
+      "title": "Memory Limits Mb",
+      "type": "integer"
+     }
+    },
+    "title": "Limits",
+    "type": "object"
+   },
+   "LogLevelReq": {
+    "properties": {
+     "level": {
+      "default": "ERROR",
+      "description": "Python logging level name, case-insensitive: DEBUG, INFO, WARNING, ERROR or CRITICAL. An unknown name falls back to ERROR.",
+      "title": "Level",
+      "type": "string"
+     }
+    },
+    "title": "LogLevelReq",
+    "type": "object"
+   },
+   "LoopGateTemplate": {
+    "description": "What to generate for a loop the diagram is creating.\n\nA loop in adk 2.x is a routed back-edge plus a node that emits the route,\nbecause an `LlmAgent` cannot emit one. This describes that node \u2014 never read\nfrom source, only sent when the diagram is asking for a loop to be built.\n\nNothing here is the loop's *decision*. The round cap is a safety net; ending\nthe loop on purpose is the agent's job, done by calling the exit tool, which\nis why `allow_early_exit` exists.",
+    "properties": {
+     "allow_early_exit": {
+      "default": true,
+      "description": "Generate the tool an agent calls to end the loop early.",
+      "title": "Allow Early Exit",
+      "type": "boolean"
+     },
+     "kind": {
+      "const": "loop_gate",
+      "default": "loop_gate",
+      "title": "Kind",
+      "type": "string"
+     },
+     "loop_name": {
+      "description": "Names everything generated for this loop, so several loops can coexist.",
+      "title": "Loop Name",
+      "type": "string"
+     },
+     "max_rounds": {
+      "default": 5,
+      "description": "Rounds before the loop stops on its own.",
+      "minimum": 1.0,
+      "title": "Max Rounds",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "loop_name"
+    ],
+    "title": "LoopGateTemplate",
+    "type": "object"
+   },
+   "Metrics": {
+    "properties": {
+     "production_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Production date of the workflow",
+      "title": "Production Date"
+     }
+    },
+    "title": "Metrics",
+    "type": "object"
+   },
+   "NodeLocation": {
+    "description": "One place in the source that a graph node is written.\n\nLines are 1-based and inclusive, and span the definition as it reads \u2014 a\nmulti-line constructor call, a function with its decorators and body \u2014 rather\nthan just the line the name appears on.",
+    "properties": {
+     "end_line": {
+      "minimum": 1.0,
+      "title": "End Line",
+      "type": "integer"
+     },
+     "kind": {
+      "description": "`definition` for the node itself. A generated loop gate also reports `max_rounds` (the constant holding its round cap) and `exit_tool` (the tool an agent calls to leave early), which are part of the loop without being nodes.",
+      "title": "Kind",
+      "type": "string"
+     },
+     "start_line": {
+      "minimum": 1.0,
+      "title": "Start Line",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "kind",
+     "start_line",
+     "end_line"
+    ],
+    "title": "NodeLocation",
+    "type": "object"
+   },
+   "RequestDetails": {
+    "properties": {
+     "reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "reason_details": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason Details"
+     },
+     "status": {
+      "default": "OK",
+      "enum": [
+       "OK",
+       "NOK"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "title": "RequestDetails",
+    "type": "object"
+   },
+   "RetryPolicy": {
+    "description": "A node's `RetryConfig`, flattened for display.",
+    "properties": {
+     "backoff_factor": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Backoff Factor"
+     },
+     "exceptions": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Names of the exception types the policy retries. `None` means every exception is retried.",
+      "title": "Exceptions"
+     },
+     "initial_delay": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Initial Delay"
+     },
+     "jitter": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Jitter"
+     },
+     "max_attempts": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Max Attempts"
+     },
+     "max_delay": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Max Delay"
+     }
+    },
+    "title": "RetryPolicy",
+    "type": "object"
+   },
+   "RouteNodeTemplate": {
+    "description": "What to generate for a route node the diagram is creating.\n\nCarries nothing but its kind, for the same reason the function node does: the\nbranch labels live on the *edges*, and the condition is the user's to write.\nWhat this asks for is a node that emits a route at all \u2014 which is the part a\ngraph cannot do without.",
+    "properties": {
+     "kind": {
+      "const": "route_node",
+      "default": "route_node",
+      "title": "Kind",
+      "type": "string"
+     }
+    },
+    "title": "RouteNodeTemplate",
+    "type": "object"
+   },
+   "SessionCreateRequest": {
+    "properties": {
+     "run_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Creator of the session",
+      "title": "Run By"
+     },
+     "session_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Id of a new conversation",
+      "title": "Session Id"
+     },
+     "user_input": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "User Input"
+     },
+     "workflow_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Id of the workflow where the session will be created",
+      "title": "Workflow Id"
+     }
+    },
+    "title": "SessionCreateRequest",
+    "type": "object"
+   },
+   "SessionCreateResponse": {
+    "properties": {
+     "session_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Id of a new conversation",
+      "title": "Session Id"
+     }
+    },
+    "title": "SessionCreateResponse",
+    "type": "object"
+   },
+   "SessionEvent": {
+    "properties": {
+     "author": {
+      "title": "Author",
+      "type": "string"
+     },
+     "content": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Content"
+     },
+     "context_percentage": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Context Percentage"
+     },
+     "decision": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Decision"
+     },
+     "entry_id": {
+      "title": "Entry Id",
+      "type": "string"
+     },
+     "final": {
+      "default": false,
+      "title": "Final",
+      "type": "boolean"
+     },
+     "function_calls": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/FunctionCall"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Function Calls"
+     },
+     "function_responses": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/FunctionResponse"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Function Responses"
+     },
+     "hitl_event_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hitl Event Id"
+     },
+     "invocation_id": {
+      "title": "Invocation Id",
+      "type": "string"
+     },
+     "node_latency_ms": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Node Latency Ms"
+     },
+     "node_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Node Name"
+     },
+     "node_path": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Node Path"
+     },
+     "node_started_at": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Node Started At"
+     },
+     "node_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Node Type"
+     },
+     "span_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Span Id"
+     },
+     "thoughts": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Thoughts"
+     },
+     "timestamp": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Timestamp"
+     }
+    },
+    "required": [
+     "entry_id",
+     "author",
+     "invocation_id",
+     "timestamp",
+     "thoughts"
+    ],
+    "title": "SessionEvent",
+    "type": "object"
+   },
+   "Settings": {
+    "properties": {
+     "limits": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Limits"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": {
+       "cpu_time_limits_seconds": 3,
+       "memory_limits_mb": 30
+      }
+     }
+    },
+    "title": "Settings",
+    "type": "object"
+   },
+   "SharedImportTemplate": {
+    "description": "Ask for a shared workflow to be wired into the graph.\n\nNot a node to construct but a name to import: `from shared import <name>`,\nafter which the graph refers to it like any other node. The workflow behind\nit lives in its own file, so nothing about it is written here.",
+    "properties": {
+     "kind": {
+      "const": "shared_import",
+      "default": "shared_import",
+      "title": "Kind",
+      "type": "string"
+     }
+    },
+    "title": "SharedImportTemplate",
+    "type": "object"
+   },
+   "SharedWorkflow": {
+    "properties": {
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Description of the root agent",
+      "title": "Description"
+     },
+     "id": {
+      "description": "Id of the workflow",
+      "title": "Id",
+      "type": "string"
+     },
+     "is_adk_2x": {
+      "default": false,
+      "description": "True when this workflow is a Workflow graph. A graph and an agent tree cannot be used inside one another, so only workflows of the same kind as the importer are usable.",
+      "title": "Is Adk 2X",
+      "type": "boolean"
+     },
+     "shared_package_name": {
+      "description": "Name of the package to be used in the import statement. The name of the root agent",
+      "title": "Shared Package Name",
+      "type": "string"
+     },
+     "workflow_name": {
+      "description": "Name of the workflow",
+      "title": "Workflow Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "shared_package_name",
+     "workflow_name"
+    ],
+    "title": "SharedWorkflow",
+    "type": "object"
+   },
+   "SharedWorkflowsRequest": {
+    "description": "What to list. Every field optional, so a caller that wants everything can\nsend nothing at all \u2014 which is what the existing callers do.",
+    "properties": {
+     "adk_version": {
+      "anyOf": [
+       {
+        "enum": [
+         1,
+         2
+        ],
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Narrow the list to one authoring style: `1` for agent trees, `2` for `Workflow` graphs. Omit for both. The two cannot be used inside one another, so a caller building one kind has no use for the other \u2014 but the filter is opt-in, because listing what exists is still a valid question.",
+      "title": "Adk Version"
+     }
+    },
+    "title": "SharedWorkflowsRequest",
+    "type": "object"
+   },
+   "SharedWorkflowsResponse": {
+    "properties": {
+     "shared_workflows": {
+      "default": [],
+      "description": "List of workflows",
+      "items": {
+       "$ref": "#/components/schemas/SharedWorkflow"
+      },
+      "title": "Shared Workflows",
+      "type": "array"
+     }
+    },
+    "title": "SharedWorkflowsResponse",
+    "type": "object"
+   },
+   "ToolsDiscoveryResponse": {
+    "properties": {
+     "tools": {
+      "default": [],
+      "description": "List of tools available from the MCP client",
+      "items": {},
+      "title": "Tools",
+      "type": "array"
+     }
+    },
+    "title": "ToolsDiscoveryResponse",
+    "type": "object"
+   },
+   "ValidationError": {
+    "properties": {
+     "ctx": {
+      "title": "Context",
+      "type": "object"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "title": "Location",
+      "type": "array"
+     },
+     "msg": {
+      "title": "Message",
+      "type": "string"
+     },
+     "type": {
+      "title": "Error Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError",
+    "type": "object"
+   },
+   "Workflow": {
+    "properties": {
+     "agents_private_output": {
+      "anyOf": [
+       {
+        "items": {},
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Configured agents of which outputs are not shown in the assistant.",
+      "title": "Agents Private Output"
+     },
+     "commit_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Commit the workflow currently points to.",
+      "title": "Commit Hash"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": "",
+      "description": "Description of the workflow",
+      "title": "Description"
+     },
+     "env_variables": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/EnvVariable"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": [],
+      "description": "Source code",
+      "title": "Env Variables"
+     },
+     "id": {
+      "description": "Id of the workflow",
+      "title": "Id",
+      "type": "string"
+     },
+     "is_adk_2x": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "True when the root agent is a Workflow, i.e. the workflow is authored against ADK 2.x.",
+      "title": "Is Adk 2X"
+     },
+     "is_draft": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "True for workflows that were only tried, never saved.",
+      "title": "Is Draft"
+     },
+     "is_executable": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Whether the caller may run this workflow.",
+      "title": "Is Executable"
+     },
+     "is_production": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Weather workflow is used in production or not.",
+      "title": "Is Production"
+     },
+     "is_shared": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Whether the workflow can be used by other workflows.",
+      "title": "Is Shared"
+     },
+     "is_writable": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Whether the caller may modify this workflow.",
+      "title": "Is Writable"
+     },
+     "memory_enabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Whether memory injection is enabled for this workflow.",
+      "title": "Memory Enabled"
+     },
+     "metrics": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Metrics"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": {},
+      "description": "Metrics of the workflow"
+     },
+     "name": {
+      "description": "Name of the workflow",
+      "title": "Name",
+      "type": "string"
+     },
+     "persistent_workflow_sessions": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Keep workflow sessions alive across multiple interactions.",
+      "title": "Persistent Workflow Sessions"
+     },
+     "remove_agentic_tool_calls": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Remove intermediate agentic tool calls from the conversation context.",
+      "title": "Remove Agentic Tool Calls"
+     },
+     "roles": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/WorkflowRole"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": [],
+      "description": "Roles of the workflow",
+      "title": "Roles"
+     },
+     "selected_model": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/webservices__agents_exposer__api__v1__schemas__workflow_upsert_request__SelectedModel"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Model selected for the workflow."
+     },
+     "sessions": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/WorkflowSession"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": [],
+      "description": "Workflow conversations",
+      "title": "Sessions"
+     },
+     "settings": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Settings"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": {
+       "limits": {
+        "cpu_time_limits_seconds": 3,
+        "memory_limits_mb": 30
+       }
+      },
+      "description": "Resource settings of the workflow"
+     },
+     "shared_agents_deps": {
+      "anyOf": [
+       {
+        "items": {},
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "List of {name: <shared wf name>} that this workflow imports from shared module.",
+      "title": "Shared Agents Deps"
+     },
+     "source_code": {
+      "description": "Source code",
+      "title": "Source Code",
+      "type": "string"
+     },
+     "use_in_assistant": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Whether the workflow can be used by Arcanna's Assistant.",
+      "title": "Use In Assistant"
+     },
+     "workflow_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "'library'/'template' for built-in workflows; unset for user-created workflows.",
+      "title": "Workflow Type"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "source_code"
+    ],
+    "title": "Workflow",
+    "type": "object"
+   },
+   "WorkflowBaseRunRequest": {
+    "properties": {
+     "commit_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The version of the workflow, the user wants to run.",
+      "title": "Commit Hash"
+     },
+     "debug_config": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/DebugConfig"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Debug breakpoint configuration. When omitted or disabled the run is not paused."
+     },
+     "input": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Prompt input for the agentic workflow",
+      "title": "Input"
+     },
+     "invocation_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Provide this id if you want to resume an interrupted workflow.",
+      "title": "Invocation Id"
+     },
+     "run_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Creator of the session",
+      "title": "Run By"
+     },
+     "run_from": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Where was the session invoked from. E.g.: 'workflow_ui', 'event_explorer', 'pipeline', 'assistant'",
+      "title": "Run From"
+     },
+     "session_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Id of a on going conversation",
+      "title": "Session Id"
+     }
+    },
+    "title": "WorkflowBaseRunRequest",
+    "type": "object"
+   },
+   "WorkflowBuildTestResponse": {
+    "properties": {
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "stderr": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stderr"
+     },
+     "stdout": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Stdout"
+     }
+    },
+    "title": "WorkflowBuildTestResponse",
+    "type": "object"
+   },
+   "WorkflowBulkRetryRequest": {
+    "properties": {
+     "run_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "User that triggered the retry",
+      "title": "Run By"
+     },
+     "session_ids": {
+      "default": [],
+      "description": "Ids of the sessions to retry",
+      "items": {
+       "type": "string"
+      },
+      "title": "Session Ids",
+      "type": "array"
+     },
+     "workflow_id": {
+      "description": "Id of the workflow the sessions belong to",
+      "title": "Workflow Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "workflow_id"
+    ],
+    "title": "WorkflowBulkRetryRequest",
+    "type": "object"
+   },
+   "WorkflowBulkRetryResponse": {
+    "properties": {
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "retried_session_ids": {
+      "default": [],
+      "description": "Sessions a retry was started for",
+      "items": {
+       "type": "string"
+      },
+      "title": "Retried Session Ids",
+      "type": "array"
+     },
+     "skipped_session_ids": {
+      "default": [],
+      "description": "Sessions still running, deleted, or not part of this workflow",
+      "items": {
+       "type": "string"
+      },
+      "title": "Skipped Session Ids",
+      "type": "array"
+     }
+    },
+    "title": "WorkflowBulkRetryResponse",
+    "type": "object"
+   },
+   "WorkflowBulkStopRequest": {
+    "properties": {
+     "session_ids": {
+      "default": [],
+      "description": "Ids of the sessions to stop",
+      "items": {
+       "type": "string"
+      },
+      "title": "Session Ids",
+      "type": "array"
+     },
+     "workflow_id": {
+      "description": "Id of the workflow the sessions belong to",
+      "title": "Workflow Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "workflow_id"
+    ],
+    "title": "WorkflowBulkStopRequest",
+    "type": "object"
+   },
+   "WorkflowBulkStopResponse": {
+    "properties": {
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "skipped_session_ids": {
+      "default": [],
+      "description": "Sessions already finished, deleted, or not part of this workflow",
+      "items": {
+       "type": "string"
+      },
+      "title": "Skipped Session Ids",
+      "type": "array"
+     },
+     "stopped_session_ids": {
+      "default": [],
+      "description": "Sessions a stop was applied to",
+      "items": {
+       "type": "string"
+      },
+      "title": "Stopped Session Ids",
+      "type": "array"
+     }
+    },
+    "title": "WorkflowBulkStopResponse",
+    "type": "object"
+   },
+   "WorkflowCloneRequest": {
+    "properties": {
+     "clone_name": {
+      "description": "The title of the cloned workflow",
+      "title": "Clone Name",
+      "type": "string"
+     },
+     "id": {
+      "description": "Id of the workflow to be cloned",
+      "title": "Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "clone_name"
+    ],
+    "title": "WorkflowCloneRequest",
+    "type": "object"
+   },
+   "WorkflowContinueRequest": {
+    "properties": {
+     "agent": {
+      "description": "Name of the paused agent to resume. Parallel branches pause independently, so the resume must target one specific agent.",
+      "title": "Agent",
+      "type": "string"
+     },
+     "edited_model_input": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Optional edited request to send to the model instead of the paused one. Shape mirrors the pause's model_input: {contents: [{role, text}], system_instruction}. Omit to continue with the original (unedited) input. Text-only: non-text parts (images, function calls) are not round-tripped.",
+      "title": "Edited Model Input"
+     }
+    },
+    "required": [
+     "agent"
+    ],
+    "title": "WorkflowContinueRequest",
+    "type": "object"
+   },
+   "WorkflowConversationParseRequest": {
+    "properties": {
+     "save_output_on_event_parse": {
+      "default": false,
+      "description": "Run the save_output_on_event parser on the conversation",
+      "title": "Save Output On Event Parse",
+      "type": "boolean"
+     }
+    },
+    "title": "WorkflowConversationParseRequest",
+    "type": "object"
+   },
+   "WorkflowConversationParseResponse": {
+    "properties": {
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "save_output_on_event": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Conversation entries selected by the save_output_on_event parser",
+      "title": "Save Output On Event"
+     }
+    },
+    "title": "WorkflowConversationParseResponse",
+    "type": "object"
+   },
+   "WorkflowDecisionRequest": {
+    "properties": {
+     "decision_target": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/DecisionTarget"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Target of the decision: 'agent' for HITLAgent approve/reject, 'tool_call' for human_in_the_loop tool response."
+     },
+     "hitl_agent_decision": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/HitlAgentDecision"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Approve or reject the HITLAgent's proposed action. Required when decision_target is 'agent'."
+     },
+     "hitl_event_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The ID of the HITL event this decision applies to.",
+      "title": "Hitl Event Id"
+     },
+     "human_response": {
+      "anyOf": [
+       {
+        "maxLength": 4000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Free-form human response for a request_human_input tool call. Required when decision_target is 'tool_call'.",
+      "title": "Human Response"
+     },
+     "stop_session": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Stop a session that requires human decision. ",
+      "title": "Stop Session"
+     }
+    },
+    "title": "WorkflowDecisionRequest",
+    "type": "object"
+   },
+   "WorkflowDeleteRequest": {
+    "properties": {
+     "session_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": [],
+      "title": "Session Ids"
+     }
+    },
+    "title": "WorkflowDeleteRequest",
+    "type": "object"
+   },
+   "WorkflowListResponse": {
+    "properties": {
+     "entries": {
+      "default": [],
+      "description": "List of workflows",
+      "items": {
+       "$ref": "#/components/schemas/Workflow"
+      },
+      "title": "Entries",
+      "type": "array"
+     }
+    },
+    "title": "WorkflowListResponse",
+    "type": "object"
+   },
+   "WorkflowMemoryItem": {
+    "properties": {
+     "agent_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Agent Id"
+     },
+     "content": {
+      "title": "Content",
+      "type": "string"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "mem_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mem Type"
+     },
+     "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+     }
+    },
+    "required": [
+     "content"
+    ],
+    "title": "WorkflowMemoryItem",
+    "type": "object"
+   },
+   "WorkflowMemoryListResponse": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/WorkflowMemoryItem"
+      },
+      "title": "Items",
+      "type": "array"
+     }
+    },
+    "title": "WorkflowMemoryListResponse",
+    "type": "object"
+   },
+   "WorkflowMemoryMutateResponse": {
+    "properties": {
+     "id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     }
+    },
+    "title": "WorkflowMemoryMutateResponse",
+    "type": "object"
+   },
+   "WorkflowMemoryRequest": {
+    "properties": {
+     "agent_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Agent Id"
+     },
+     "content": {
+      "anyOf": [
+       {
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Content"
+     },
+     "mem_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mem Type"
+     },
+     "memory_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Memory Id"
+     },
+     "metadata": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Metadata"
+     }
+    },
+    "title": "WorkflowMemoryRequest",
+    "type": "object"
+   },
+   "WorkflowPlanGenerateRequest": {
+    "properties": {
+     "agents": {
+      "anyOf": [
+       {
+        "additionalProperties": {
+         "$ref": "#/components/schemas/ExtractedNode-Input"
+        },
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The edited agent nodes of an ADK 2.x graph, keyed by agent name. Send the whole forest `parse` returned, not only the agents that changed: an agent omitted here is treated as no longer referenced. Exactly one of `plan` / `agents` is expected.",
+      "title": "Agents"
+     },
+     "graph": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ExtractedGraph-Input"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The desired structure of an ADK 2.x graph \u2014 which nodes exist and how they are wired. Sent whole, not as a diff. Only agent nodes may be added or removed; everything else must already exist in the source."
+     },
+     "plan": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ExtractedWorkflow-Input"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The edited agent tree, for an ADK 1.x workflow."
+     },
+     "source": {
+      "description": "The original ADK source code the plan was parsed from.",
+      "title": "Source",
+      "type": "string"
+     }
+    },
+    "required": [
+     "source"
+    ],
+    "title": "WorkflowPlanGenerateRequest",
+    "type": "object"
+   },
+   "WorkflowPlanGenerateResponse": {
+    "properties": {
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "source": {
+      "description": "Regenerated ADK source code with the plan edits applied.",
+      "title": "Source",
+      "type": "string"
+     }
+    },
+    "required": [
+     "source"
+    ],
+    "title": "WorkflowPlanGenerateResponse",
+    "type": "object"
+   },
+   "WorkflowPlanLocateRequest": {
+    "properties": {
+     "node_name": {
+      "description": "Name of the graph node to find, as the diagram knows it. Unique within a graph; adk rejects duplicates.",
+      "title": "Node Name",
+      "type": "string"
+     },
+     "source": {
+      "description": "The source to search \u2014 the editor's current buffer, not the last saved version, so the lines returned describe the text the caller is about to show.",
+      "title": "Source",
+      "type": "string"
+     }
+    },
+    "required": [
+     "source",
+     "node_name"
+    ],
+    "title": "WorkflowPlanLocateRequest",
+    "type": "object"
+   },
+   "WorkflowPlanLocateResponse": {
+    "properties": {
+     "locations": {
+      "description": "Where the node is written, the definition first. Empty when this source does not define it \u2014 `__START__`, a name that only the validated graph knows, or a buffer that no longer parses. There is then nothing to jump to, which is the honest answer rather than a guessed line.",
+      "items": {
+       "$ref": "#/components/schemas/NodeLocation"
+      },
+      "title": "Locations",
+      "type": "array"
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     }
+    },
+    "title": "WorkflowPlanLocateResponse",
+    "type": "object"
+   },
+   "WorkflowPlanParseRequest": {
+    "properties": {
+     "source": {
+      "description": "ADK Python source code containing a `root_agent` assignment.",
+      "title": "Source",
+      "type": "string"
+     }
+    },
+    "required": [
+     "source"
+    ],
+    "title": "WorkflowPlanParseRequest",
+    "type": "object"
+   },
+   "WorkflowPlanParseResponse": {
+    "properties": {
+     "agents": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/ExtractedNode-Output"
+      },
+      "description": "For an ADK 2.x workflow, the editable payload of the graph's agent nodes, keyed by agent name \u2014 join it against the graph's nodes. A superset: it may contain agents the graph does not use, and may omit ones constructed inline inside `edges=[...]`, which have no binding to edit. Empty for a 1.x workflow, whose payload is `plan`.",
+      "title": "Agents",
+      "type": "object"
+     },
+     "graph": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ExtractedGraph-Output"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "For an ADK 2.x workflow, the graph as declared by this source \u2014 read statically, so it tracks the editor's buffer rather than the last validated version. Structure only: resolved detail (schemas, defaulted modes) exists only once ADK has built the nodes, and comes from the workflow's stored graph. Null for a 1.x workflow or a source that does not parse."
+     },
+     "plan": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ExtractedWorkflow-Output"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The extracted agent tree for an ADK 1.x workflow. `null` for a `Workflow(...)` root, which is a graph rather than a tree \u2014 see `agents`."
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     }
+    },
+    "title": "WorkflowPlanParseResponse",
+    "type": "object"
+   },
+   "WorkflowRetryRequest": {
+    "properties": {
+     "run_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "User that triggered the retry",
+      "title": "Run By"
+     }
+    },
+    "title": "WorkflowRetryRequest",
+    "type": "object"
+   },
+   "WorkflowRole": {
+    "properties": {
+     "permissions": {
+      "description": "The list of permissions for the role",
+      "items": {
+       "type": "string"
+      },
+      "title": "Permissions",
+      "type": "array"
+     },
+     "role": {
+      "description": "The name of the role",
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "role",
+     "permissions"
+    ],
+    "title": "WorkflowRole",
+    "type": "object"
+   },
+   "WorkflowRunRequest": {
+    "properties": {
+     "commit_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The version of the workflow, the user wants to run.",
+      "title": "Commit Hash"
+     },
+     "debug_config": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/DebugConfig"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Debug breakpoint configuration. When omitted or disabled the run is not paused."
+     },
+     "input": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Prompt input for the agentic workflow",
+      "title": "Input"
+     },
+     "invocation_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Provide this id if you want to resume an interrupted workflow.",
+      "title": "Invocation Id"
+     },
+     "run_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Creator of the session",
+      "title": "Run By"
+     },
+     "run_from": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Where was the session invoked from. E.g.: 'workflow_ui', 'event_explorer', 'pipeline', 'assistant'",
+      "title": "Run From"
+     },
+     "session_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Id of a on going conversation",
+      "title": "Session Id"
+     },
+     "wait_for_completion": {
+      "default": true,
+      "description": "Wait for workflow to complete. If false, session id will be returned after creation.",
+      "title": "Wait For Completion",
+      "type": "boolean"
+     },
+     "wait_for_first_event": {
+      "default": true,
+      "description": "Wait for first event. If false, it wont wait for the session to be created. With false it will return false assuming the session is succesfully created",
+      "title": "Wait For First Event",
+      "type": "boolean"
+     }
+    },
+    "title": "WorkflowRunRequest",
+    "type": "object"
+   },
+   "WorkflowRunResponse": {
+    "properties": {
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "session_id": {
+      "description": "Id of a on going conversation",
+      "title": "Session Id",
+      "type": "string"
+     },
+     "workflow_commit_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Commit the session is attached to",
+      "title": "Workflow Commit Hash"
+     },
+     "workflow_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Workflow the session is attached to; on a first try run this is the newly created draft workflow",
+      "title": "Workflow Id"
+     },
+     "workflow_result": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/SessionEvent"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": [],
+      "title": "Workflow Result"
+     }
+    },
+    "required": [
+     "session_id"
+    ],
+    "title": "WorkflowRunResponse",
+    "type": "object"
+   },
+   "WorkflowRunTestRequest": {
+    "properties": {
+     "env_variables": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/EnvVariable"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "env variables",
+      "title": "Env Variables"
+     },
+     "invocation_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Provide this id if you want to resume an interrupted workflow.",
+      "title": "Invocation Id"
+     },
+     "run_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Creator of the session",
+      "title": "Run By"
+     },
+     "selected_model": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/webservices__agents_exposer__api__v1__schemas__workflow_upsert_request__SelectedModel"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Model to be added in env variables for use."
+     },
+     "session_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Session Id"
+     },
+     "settings": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Settings"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "resource settings"
+     },
+     "source_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "source code to run",
+      "title": "Source Code"
+     },
+     "user_input": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "User Input"
+     },
+     "wait_for_completion": {
+      "default": true,
+      "description": "Wait for workflow to complete. If false, session id will be returned immediately",
+      "title": "Wait For Completion",
+      "type": "boolean"
+     }
+    },
+    "title": "WorkflowRunTestRequest",
+    "type": "object"
+   },
+   "WorkflowRunTestResponse": {
+    "properties": {
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "run_stats": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Run Stats"
+     },
+     "session_id": {
+      "description": "Id of a on going conversation",
+      "title": "Session Id",
+      "type": "string"
+     },
+     "workflow_commit_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Commit the session is attached to",
+      "title": "Workflow Commit Hash"
+     },
+     "workflow_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Workflow the session is attached to; on a first try run this is the newly created draft workflow",
+      "title": "Workflow Id"
+     },
+     "workflow_result": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/SessionEvent"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": [],
+      "title": "Workflow Result"
+     }
+    },
+    "required": [
+     "session_id"
+    ],
+    "title": "WorkflowRunTestResponse",
+    "type": "object"
+   },
+   "WorkflowSession": {
+    "properties": {
+     "err_msg": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": "",
+      "description": "Session has errors",
+      "title": "Err Msg"
+     },
+     "id": {
+      "description": "Id of the session",
+      "title": "Id",
+      "type": "string"
+     },
+     "is_pending_human_input": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Workflow conversation is paused or not for human input",
+      "title": "Is Pending Human Input"
+     },
+     "last_updated_time": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Last update time of the workflow session",
+      "title": "Last Updated Time"
+     },
+     "state": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "State of the session",
+      "title": "State"
+     }
+    },
+    "required": [
+     "id"
+    ],
+    "title": "WorkflowSession",
+    "type": "object"
+   },
+   "WorkflowSessionResponse": {
+    "properties": {
+     "breakpoint_pauses": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Currently model-input-paused agents and their real assembled requests.",
+      "title": "Breakpoint Pauses"
+     },
+     "debug_model_input_edits": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Original vs edited model input per agent, for agents whose request was edited.",
+      "title": "Debug Model Input Edits"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "events": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/SessionEvent"
+      },
+      "title": "Events",
+      "type": "array"
+     },
+     "interrupt_request": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "title": "Interrupt Request"
+     },
+     "last_invocation_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Invocation id to resume from when paused.",
+      "title": "Last Invocation Id"
+     },
+     "last_update_time": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Update Time"
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "run_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Run By"
+     },
+     "run_feedback": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Like/dislike and comments left on the whole run.",
+      "title": "Run Feedback"
+     },
+     "run_mode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": "polling",
+      "title": "Run Mode"
+     },
+     "run_stats": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Run Stats"
+     },
+     "state": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "State"
+     },
+     "workflow_commit_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Workflow Commit Hash"
+     }
+    },
+    "title": "WorkflowSessionResponse",
+    "type": "object"
+   },
+   "WorkflowStopPolling": {
+    "properties": {
+     "session_id": {
+      "description": "Session id of the workflow to be stopped",
+      "title": "Session Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "session_id"
+    ],
+    "title": "WorkflowStopPolling",
+    "type": "object"
+   },
+   "WorkflowUpsertRequest": {
+    "properties": {
+     "env_variables": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/EnvVariable"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Environment variables",
+      "title": "Env Variables"
+     },
+     "id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Id of the workflow",
+      "title": "Id"
+     },
+     "is_draft": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Is the workflow a draft, an experiment? it should be created as a draft.",
+      "title": "Is Draft"
+     },
+     "is_shared": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Weather the workflow is shared or not for other workflows to be used.",
+      "title": "Is Shared"
+     },
+     "memory_enabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Enable memory injection (facts + per-agent memory) for this workflow's runs.",
+      "title": "Memory Enabled"
+     },
+     "persistent_workflow_sessions": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Keep workflow sessions alive across multiple interactions.",
+      "title": "Persistent Workflow Sessions"
+     },
+     "remove_agentic_tool_calls": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Remove intermediate agentic tool calls from the conversation context (tool calls are still visible to the user).",
+      "title": "Remove Agentic Tool Calls"
+     },
+     "roles": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/WorkflowRole"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": [],
+      "description": "Roles of the workflow",
+      "title": "Roles"
+     },
+     "selected_model": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/webservices__agents_exposer__api__v1__schemas__workflow_upsert_request__SelectedModel"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Model to be added in env variables for use."
+     },
+     "settings": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Settings"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": {
+       "limits": {
+        "cpu_time_limits_seconds": 3,
+        "memory_limits_mb": 30
+       }
+      },
+      "description": "Resource settings of the workflow"
+     },
+     "source_code": {
+      "description": "Source code",
+      "title": "Source Code",
+      "type": "string"
+     },
+     "tags": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": [],
+      "description": "Tags for the workflow to be identified.",
+      "title": "Tags"
+     },
+     "use_in_assistant": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": false,
+      "description": "Weather the workflow can be used by Arcanna's Assistant or not.",
+      "title": "Use In Assistant"
+     }
+    },
+    "required": [
+     "source_code"
+    ],
+    "title": "WorkflowUpsertRequest",
+    "type": "object"
+   },
+   "WorkflowUpsertResponse": {
+    "properties": {
+     "commit_hash": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Commit the saved workflow points to",
+      "title": "Commit Hash"
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "workflow_id": {
+      "description": "Id of the workflow",
+      "title": "Workflow Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "workflow_id"
+    ],
+    "title": "WorkflowUpsertResponse",
+    "type": "object"
+   },
+   "webservices__agents_exposer__api__v1__schemas__workflow_upsert_request__SelectedModel": {
+    "properties": {
+     "integration_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Integration Id of the llm provider.",
+      "title": "Integration Id"
+     },
+     "model_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Id of the model",
+      "title": "Model Id"
+     }
+    },
+    "title": "SelectedModel",
+    "type": "object"
+   },
+   "webservices__agents_exposer__workflow_lib__workflow_plan__selected_model__SelectedModel": {
+    "properties": {
+     "agent_count": {
+      "default": 1,
+      "description": "Number of agents in the workflow that use this model.",
+      "title": "Agent Count",
+      "type": "integer"
+     },
+     "integration_id": {
+      "description": "The integration id of the selected provider.",
+      "title": "Integration Id",
+      "type": "string"
+     },
+     "model_id": {
+      "description": "The id of the model from the selected provider.",
+      "title": "Model Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "integration_id",
+     "model_id"
+    ],
+    "title": "SelectedModel",
+    "type": "object"
+   }
+  },
+  "securitySchemes": {
+   "HTTPBearer": {
+    "scheme": "bearer",
+    "type": "http"
+   }
+  }
+ },
+ "info": {
+  "title": "FastAPI",
+  "version": "0.1.0"
+ },
+ "openapi": "3.1.0",
+ "paths": {
+  "/api/v1/agents-workflow/build": {
+   "post": {
+    "operationId": "v1_build_code",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowRunTestRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowBuildTestResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Build user defined code of agentic workflow.",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/clone": {
+   "post": {
+    "operationId": "v1_clone_agentic_workflow",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowCloneRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BaseResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Clone a workflow",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/list": {
+   "get": {
+    "operationId": "v1_list_workflows",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowListResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List workflows",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/llm-providers": {
+   "get": {
+    "operationId": "v1_list_llm_providers",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/LLMProvider"
+         },
+         "title": "Response V1 List Llm Providers",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List integrations of type LLM and their available models",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/run/{workflow_id}": {
+   "post": {
+    "operationId": "v1_run_workflow",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowRunRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowRunResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Run an existing agentic workflow",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/run/{workflow_id}/stream": {
+   "post": {
+    "operationId": "v1_run_workflow_stream",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowBaseRunRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Start stream for an agentic workflow",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/sessions/bulk": {
+   "delete": {
+    "operationId": "v1_delete_sessions_bulk",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowDeleteRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BaseResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Bulk delete sessions of a workflow.",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/sessions/bulk/retry": {
+   "post": {
+    "operationId": "v1_retry_sessions_bulk",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowBulkRetryRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowBulkRetryResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Bulk retry sessions of a workflow.",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/sessions/bulk/stop": {
+   "post": {
+    "operationId": "v1_stop_sessions_bulk",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowBulkStopRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowBulkStopResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Bulk stop sessions of a workflow.",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/sessions/create": {
+   "post": {
+    "operationId": "v1_create_session",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SessionCreateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SessionCreateResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get all events in a session of a workflow.",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/sessions/{session_id}": {
+   "delete": {
+    "operationId": "v1_delete_session_by_id",
+    "parameters": [
+     {
+      "description": "Id of the workflow run session, as returned when the run started.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the workflow run session, as returned when the run started.",
+       "title": "Session Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BaseResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete a session(s) of a workflow.",
+    "tags": [
+     "Agents Workflow"
+    ]
+   },
+   "get": {
+    "operationId": "v1_get_session_by_id",
+    "parameters": [
+     {
+      "description": "Id of the workflow run session, as returned when the run started.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the workflow run session, as returned when the run started.",
+       "title": "Session Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowSessionResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get all events in a session of a workflow.",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/sessions/{session_id}/continue": {
+   "post": {
+    "description": "Only for debug runs paused before a model call. Resumes the named agent, optionally with an edited model input. Does not answer a human-in-the-loop request; use the decision endpoint for a session in AWAITING_DECISION state.",
+    "operationId": "v1_continue_from_model_input_breakpoint",
+    "parameters": [
+     {
+      "description": "Id of the workflow run session, as returned when the run started.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the workflow run session, as returned when the run started.",
+       "title": "Session Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowContinueRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BaseResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Resume an agent paused at a model-input breakpoint",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/sessions/{session_id}/decision": {
+   "post": {
+    "operationId": "v1_submit_decision",
+    "parameters": [
+     {
+      "description": "Id of the workflow run session, as returned when the run started.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the workflow run session, as returned when the run started.",
+       "title": "Session Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowDecisionRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BaseResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Submit a human decision for a session in AWAITING_DECISION state",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/sessions/{session_id}/generate-eval-case": {
+   "post": {
+    "operationId": "v1_generate_eval_case",
+    "parameters": [
+     {
+      "description": "Id of the workflow run session, as returned when the run started.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the workflow run session, as returned when the run started.",
+       "title": "Session Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GenerateEvalSetResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Generate an eval case from an existing workflow session",
+    "tags": [
+     "Agents Workflow Eval"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/sessions/{session_id}/retry": {
+   "post": {
+    "operationId": "v1_retry_session",
+    "parameters": [
+     {
+      "description": "Id of the workflow run session, as returned when the run started.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the workflow run session, as returned when the run started.",
+       "title": "Session Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowRetryRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowRunResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Retry the session by sending the first input once more, on the same session.",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/shared-workflows": {
+   "post": {
+    "description": "The body is optional, and so is every field in it: callers that predate the\nfilter send no body at all and still get the whole list.",
+    "operationId": "v1_get_shared_workflows",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/SharedWorkflowsRequest"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Request Body"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SharedWorkflowsResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List workflows",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/stop": {
+   "post": {
+    "description": "Stop a workflow session run that runs in the polling mode.",
+    "operationId": "v1_stop_workflow",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowStopPolling"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BaseResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Stop a workflow session that runs in the background",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/test/run": {
+   "post": {
+    "operationId": "v1_run_test",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowRunTestRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowRunTestResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Test run an agentic workflow",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/upsert": {
+   "post": {
+    "operationId": "v1_upsert_agentic_workflow",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowUpsertRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowUpsertResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create/update an agentic workflow",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/{workflow_id}": {
+   "delete": {
+    "operationId": "v1_delete_workflow_by_id",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BaseResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete a workflow",
+    "tags": [
+     "Agents Workflow"
+    ]
+   },
+   "get": {
+    "operationId": "v1_get_workflow_by_id",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Version of the workflow to return. Omit for the latest.",
+      "in": "query",
+      "name": "commit_hash",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Version of the workflow to return. Omit for the latest.",
+       "title": "Commit Hash"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Workflow"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List workflows",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/{workflow_id}/evaluate": {
+   "post": {
+    "operationId": "v1_evaluate_workflow",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EvalRunRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EvalRunResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Evaluate a workflow against an inline eval set with configurable criteria",
+    "tags": [
+     "Agents Workflow Eval"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/{workflow_id}/memory/add": {
+   "post": {
+    "operationId": "v1_add_workflow_memory",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowMemoryRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowMemoryMutateResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Workflow Memory",
+    "tags": [
+     "Workflow Memory"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/{workflow_id}/memory/delete": {
+   "post": {
+    "operationId": "v1_delete_workflow_memory",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowMemoryRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowMemoryMutateResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Workflow Memory",
+    "tags": [
+     "Workflow Memory"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/{workflow_id}/memory/list": {
+   "post": {
+    "operationId": "v1_list_workflow_memory",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowMemoryRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowMemoryListResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Workflow Memory",
+    "tags": [
+     "Workflow Memory"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/{workflow_id}/memory/update": {
+   "post": {
+    "operationId": "v1_update_workflow_memory",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowMemoryRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowMemoryMutateResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Update Workflow Memory",
+    "tags": [
+     "Workflow Memory"
+    ]
+   }
+  },
+  "/api/v1/agents-workflow/{workflow_id}/sessions/{session_id}/conversation/parse": {
+   "post": {
+    "operationId": "v1_parse_session_conversation",
+    "parameters": [
+     {
+      "description": "Id of the agentic workflow, as returned by the workflow list.",
+      "in": "path",
+      "name": "workflow_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the agentic workflow, as returned by the workflow list.",
+       "title": "Workflow Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Id of the workflow run session, as returned when the run started.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+       "description": "Id of the workflow run session, as returned when the run started.",
+       "title": "Session Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowConversationParseRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowConversationParseResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Parse the conversation of a workflow session based on requested parsers.",
+    "tags": [
+     "Agents Workflow"
+    ]
+   }
+  },
+  "/api/v1/health/check": {
+   "get": {
+    "operationId": "v1_healthcheck",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HealthcheckResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Simple check for connection between caller and the Agents Exposer API.",
+    "tags": [
+     "Health check"
+    ]
+   }
+  },
+  "/api/v1/loglevel": {
+   "post": {
+    "operationId": "v1_set_log_level",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LogLevelReq"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GenericStatus"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Set Log Level",
+    "tags": [
+     "Loglevel"
+    ]
+   }
+  },
+  "/api/v1/restart": {
+   "post": {
+    "operationId": "v1_restart",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GenericStatus"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Restart",
+    "tags": [
+     "Restart"
+    ]
+   }
+  },
+  "/api/v1/tools-discovery": {
+   "get": {
+    "operationId": "v1_discover_tools",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ToolsDiscoveryResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Discover the tools exposed by the MCP client.",
+    "tags": [
+     "Tools Discovery"
+    ]
+   }
+  },
+  "/api/v1/workflow-plan/generate": {
+   "post": {
+    "operationId": "v1_generate_workflow_code",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowPlanGenerateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowPlanGenerateResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Generate Workflow Code",
+    "tags": [
+     "Workflow Plan"
+    ]
+   }
+  },
+  "/api/v1/workflow-plan/locate": {
+   "post": {
+    "description": "Where a node the diagram draws is written in the source.\n\nA read, which is why it is not part of `/generate`: nothing here rewrites the\nfile. Source travels with the request so the answer describes the caller's\ncurrent buffer rather than whatever was last parsed.",
+    "operationId": "v1_locate_workflow_node",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowPlanLocateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowPlanLocateResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Locate Workflow Node",
+    "tags": [
+     "Workflow Plan"
+    ]
+   }
+  },
+  "/api/v1/workflow-plan/parse": {
+   "post": {
+    "operationId": "v1_parse_workflow_plan",
+    "parameters": [
+     {
+      "description": "Arcanna Rest API user session",
+      "in": "header",
+      "name": "X-Arcanna-Api-Session",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna Rest API user session",
+       "title": "X-Arcanna-Api-Session"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkflowPlanParseRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkflowPlanParseResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Parse Workflow Plan",
+    "tags": [
+     "Workflow Plan"
+    ]
+   }
+  }
+ }
+}
