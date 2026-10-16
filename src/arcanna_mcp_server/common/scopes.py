@@ -2,7 +2,6 @@ import logging
 
 import requests
 
-from arcanna_mcp_server.common import environment
 from arcanna_mcp_server.common.http import EXPOSER, base_url, headers
 
 logger = logging.getLogger(__name__)
@@ -22,9 +21,15 @@ def get_base_scope(scope_string: str):
     return ':'.join(scope_string.split(':')[:2])
 
 
+SCOPES_TIMEOUT_SECONDS = 15
+
+
 def get_api_key_scope() -> set:
-    response = requests.get(base_url(EXPOSER) + "/api/v2/token/scopes", headers=headers(),
-                            timeout=environment.REQUEST_TIMEOUT_SECONDS)
+    url = base_url(EXPOSER) + "/api/v2/token/scopes"
+    try:
+        response = requests.get(url, headers=headers(), timeout=SCOPES_TIMEOUT_SECONDS)
+    except requests.RequestException as e:
+        raise Exception(f"Cannot reach Arcanna at {url} to read the API key scopes: {e}") from e
     json_response = response.json()
 
     if response.status_code != 200 or not isinstance(json_response, list):

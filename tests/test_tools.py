@@ -215,3 +215,35 @@ def test_update_agentic_workflow_keeps_the_stored_flags():
     body = mocked.call_args_list[1][1]["json"]
     assert body["is_shared"] is True and body["use_in_assistant"] is True and body["tags"] == ["soc"]
     assert body["settings"] == {"a": 1} and body["source_code"] == "code" and body["id"] == "w1"
+
+
+@pytest.mark.parametrize("workflow_id", ["12", 12, "a1b2"])
+def test_string_ids_survive_mcp_argument_decoding(workflow_id):
+    # given
+    from arcanna_mcp_server.common import runner
+    from arcanna_mcp_server.agents.tools import workflows
+    with patch.object(runner, "get_api_key_scope", return_value={"read:agents"}):
+        mcp_server = runner.build_server("agents", AGENT_MODULES)
+
+    # when
+    with patch.object(workflows, "call", AsyncMock(return_value={"id": "x"})) as mocked:
+        asyncio.run(mcp_server.call_tool("get_agentic_workflow_by_id", {"workflow_id": workflow_id}))
+
+    # then
+    assert mocked.call_args[0][1].endswith(f"/{workflow_id}")
+
+
+def test_nested_string_fields_take_numbers():
+    # given
+    from arcanna_mcp_server.common import runner
+    from arcanna_mcp_server.agents.tools import workflows
+    with patch.object(runner, "get_api_key_scope", return_value={"write:agents"}):
+        mcp_server = runner.build_server("agents", AGENT_MODULES)
+
+    # when
+    with patch.object(workflows, "call", AsyncMock(return_value={})) as mocked:
+        asyncio.run(mcp_server.call_tool("create_agentic_workflow", {
+            "source_code": "x", "env_variables": [{"name": "PORT", "value": 8080}]}))
+
+    # then
+    assert mocked.call_args[1]["json"]["env_variables"][0]["value"] == "8080"
