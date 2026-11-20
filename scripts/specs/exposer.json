@@ -100,6 +100,38 @@
     "title": "AgenticNotesRequest",
     "type": "object"
    },
+   "AndFilter": {
+    "additionalProperties": false,
+    "properties": {
+     "and": {
+      "description": "Every one holds",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "minItems": 1,
+      "title": "And",
+      "type": "array"
+     }
+    },
+    "required": [
+     "and"
+    ],
+    "title": "AndFilter",
+    "type": "object"
+   },
    "ApiKeyProperties": {
     "properties": {
      "force_recreate": {
@@ -476,6 +508,18 @@
       "format": "binary",
       "title": "File",
       "type": "string"
+     },
+     "source_seal_token": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Seal token of the instance this archive was exported from. Required only when the archive carries custom code preprocessors, so their code can be verified and re-keyed for this environment. Treat as a password.",
+      "title": "Source Seal Token"
      }
     },
     "required": [
@@ -827,7 +871,14 @@
       "anyOf": [
        {
         "additionalProperties": {
-         "$ref": "#/components/schemas/PreprocessingProfiles"
+         "anyOf": [
+          {
+           "$ref": "#/components/schemas/DecisionPointPreprocessor"
+          },
+          {
+           "$ref": "#/components/schemas/CustomCodePreprocessor"
+          }
+         ]
         },
         "type": "object"
        },
@@ -835,7 +886,7 @@
         "type": "null"
        }
       ],
-      "description": "Preprocessing profile to apply per decision point, keyed by field name. Every key must also appear in decision_points. Omit it to use each field's default handling.",
+      "description": "Preprocessor to apply per decision point, keyed by field name: a preprocessing profile, or {\"integration_id\": ...} for a custom code preprocessor integration. Every key must also appear in decision_points. Omit it to use each field's default handling.",
       "title": "Decision Point Preprocessors"
      },
      "decision_points": {
@@ -1112,11 +1163,33 @@
     "title": "CountEventsModelResponse",
     "type": "object"
    },
+   "CustomCodePreprocessor": {
+    "properties": {
+     "integration_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Internal id of the code block integration that preprocesses this decision point. Use a reference so it resolves per environment, e.g. \"${my_code_block.internal_id}\".",
+      "title": "Integration Id"
+     }
+    },
+    "required": [
+     "integration_id"
+    ],
+    "title": "CustomCodePreprocessor",
+    "type": "object"
+   },
    "CustomCodeTypes": {
     "enum": [
      0,
      1,
-     2
+     2,
+     3
     ],
     "title": "CustomCodeTypes",
     "type": "integer"
@@ -1231,6 +1304,53 @@
     "title": "DateDeletionModelRequest",
     "type": "object"
    },
+   "DecisionPointPreprocessor": {
+    "description": "Profile names accepted by the exposer. word_only is stored as default_preprocessor, so bucket hashes don't change.",
+    "enum": [
+     "raw_preprocessor",
+     "relaxed_preprocessor",
+     "unique_sorted_csv_preprocessor",
+     "word_only_preprocessor",
+     "default_preprocessor"
+    ],
+    "title": "DecisionPointPreprocessor",
+    "type": "string"
+   },
+   "DecisionPointPreprocessorChange": {
+    "properties": {
+     "from_preprocessor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "From Preprocessor"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "to_preprocessor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "To Preprocessor"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "DecisionPointPreprocessorChange",
+    "type": "object"
+   },
    "DecisionPointSettings": {
     "properties": {
      "is_generated": {
@@ -1271,6 +1391,46 @@
      }
     },
     "title": "DecisionPointSettings",
+    "type": "object"
+   },
+   "DecisionPointsSelection": {
+    "properties": {
+     "decision_point_preprocessors": {
+      "anyOf": [
+       {
+        "additionalProperties": {
+         "anyOf": [
+          {
+           "$ref": "#/components/schemas/DecisionPointPreprocessor"
+          },
+          {
+           "$ref": "#/components/schemas/CustomCodePreprocessor"
+          }
+         ]
+        },
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Preprocessor per decision point, a preprocessing profile or {\"integration_id\": ...} for a custom code preprocessor; keys must be in decision_points.",
+      "title": "Decision Point Preprocessors"
+     },
+     "decision_points": {
+      "description": "Decision point names of the target configuration.",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 1,
+      "title": "Decision Points",
+      "type": "array"
+     }
+    },
+    "required": [
+     "decision_points"
+    ],
+    "title": "DecisionPointsSelection",
     "type": "object"
    },
    "DeclaredType": {
@@ -1551,20 +1711,68 @@
     "title": "ESClusterMetrics",
     "type": "object"
    },
+   "EdgeCounts": {
+    "properties": {
+     "by_label": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/EdgeLabelSummary"
+      },
+      "title": "By Label",
+      "type": "object"
+     },
+     "total": {
+      "default": 0,
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "title": "EdgeCounts",
+    "type": "object"
+   },
    "EdgeEndpoint": {
     "additionalProperties": false,
     "properties": {
      "from": {
-      "description": "Node type label the edge may start at.",
+      "description": "Label of the source node type.",
       "minLength": 1,
       "title": "From",
       "type": "string"
      },
+     "from_filters": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "object"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Search filters the source node must satisfy, on its key properties only.",
+      "title": "From Filters"
+     },
      "to": {
-      "description": "Node type label the edge may end at.",
+      "description": "Label of the target node type.",
       "minLength": 1,
       "title": "To",
       "type": "string"
+     },
+     "to_filters": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "object"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Search filters the target node must satisfy, on its key properties only.",
+      "title": "To Filters"
      }
     },
     "required": [
@@ -1572,6 +1780,25 @@
      "to"
     ],
     "title": "EdgeEndpoint",
+    "type": "object"
+   },
+   "EdgeLabelSummary": {
+    "properties": {
+     "count": {
+      "default": 0,
+      "title": "Count",
+      "type": "integer"
+     },
+     "endpoints": {
+      "description": "'from -> to' node label pairs, inherited through is_a; empty means unconstrained.",
+      "items": {
+       "type": "string"
+      },
+      "title": "Endpoints",
+      "type": "array"
+     }
+    },
+    "title": "EdgeLabelSummary",
     "type": "object"
    },
    "EdgeMutation": {
@@ -3571,6 +3798,203 @@
     "title": "GetResponse",
     "type": "object"
    },
+   "GraphDataDeleteRequest": {
+    "additionalProperties": false,
+    "properties": {
+     "dry_run": {
+      "default": true,
+      "description": "Only count what would go and return a sample",
+      "title": "Dry Run",
+      "type": "boolean"
+     },
+     "filters": {
+      "description": "As in node search; none deletes every row of 'labels'",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "title": "Filters",
+      "type": "array"
+     },
+     "from_filters": {
+      "description": "Edges only: filters the source node must satisfy; needs 'from_labels'",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "title": "From Filters",
+      "type": "array"
+     },
+     "from_labels": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Edges only: only edges leaving a node of one of these labels",
+      "title": "From Labels"
+     },
+     "include_subtypes": {
+      "default": false,
+      "description": "Also match types whose is_a chain reaches one of 'labels'",
+      "title": "Include Subtypes",
+      "type": "boolean"
+     },
+     "kind": {
+      "description": "'node' deletes nodes, each with every edge touching it; 'edge' deletes edges only",
+      "enum": [
+       "node",
+       "edge"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "labels": {
+      "description": "The labels to delete from",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 1,
+      "title": "Labels",
+      "type": "array"
+     },
+     "to_filters": {
+      "description": "Edges only: filters the target node must satisfy; needs 'to_labels'",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "title": "To Filters",
+      "type": "array"
+     },
+     "to_labels": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Edges only: only edges arriving at a node of one of these labels",
+      "title": "To Labels"
+     }
+    },
+    "required": [
+     "kind",
+     "labels"
+    ],
+    "title": "GraphDataDeleteRequest",
+    "type": "object"
+   },
+   "GraphDataDeleteResponse": {
+    "properties": {
+     "deleted": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "How many rows went",
+      "title": "Deleted"
+     },
+     "dry_run": {
+      "default": true,
+      "title": "Dry Run",
+      "type": "boolean"
+     },
+     "matched": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Dry run: how many rows would go",
+      "title": "Matched"
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "sample": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "object"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Dry run: a few of them, by label and key",
+      "title": "Sample"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+     }
+    },
+    "title": "GraphDataDeleteResponse",
+    "type": "object"
+   },
    "GraphDiagnosticsResponse": {
     "properties": {
      "enforcement": {
@@ -3665,6 +4089,272 @@
      }
     },
     "title": "GraphDiagnosticsResponse",
+    "type": "object"
+   },
+   "GraphEdge": {
+    "description": "With detail 'keys' both endpoints are their label and key.",
+    "properties": {
+     "edge_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Edge Id"
+     },
+     "from": {
+      "$ref": "#/components/schemas/GraphNode"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     },
+     "meta": {
+      "anyOf": [
+       {
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Meta"
+     },
+     "properties": {
+      "title": "Properties",
+      "type": "object"
+     },
+     "to": {
+      "$ref": "#/components/schemas/GraphNode"
+     }
+    },
+    "title": "GraphEdge",
+    "type": "object"
+   },
+   "GraphEdgeSearchRequest": {
+    "additionalProperties": false,
+    "properties": {
+     "detail": {
+      "default": "keys",
+      "description": "'keys' names both endpoints by label and key; 'full' adds edge_id, meta and the endpoints with every property",
+      "enum": [
+       "keys",
+       "full"
+      ],
+      "title": "Detail",
+      "type": "string"
+     },
+     "filters": {
+      "description": "Filters on the edge's own properties, as in node search",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "title": "Filters",
+      "type": "array"
+     },
+     "from_filters": {
+      "description": "Filters the source node must satisfy; needs 'from_labels'",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "title": "From Filters",
+      "type": "array"
+     },
+     "from_labels": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Only edges leaving a node of one of these labels, or a subtype",
+      "title": "From Labels"
+     },
+     "include_subtypes": {
+      "default": false,
+      "description": "Also match edge types whose is_a chain reaches one of 'labels'",
+      "title": "Include Subtypes",
+      "type": "boolean"
+     },
+     "labels": {
+      "description": "The edge labels to search",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 1,
+      "title": "Labels",
+      "type": "array"
+     },
+     "limit": {
+      "default": 50,
+      "description": "Maximum number of rows to return, 1 to 200.",
+      "maximum": 200.0,
+      "minimum": 1.0,
+      "title": "Limit",
+      "type": "integer"
+     },
+     "offset": {
+      "default": 0,
+      "description": "Number of matching rows to skip, for paging.",
+      "minimum": 0.0,
+      "title": "Offset",
+      "type": "integer"
+     },
+     "sort_by": {
+      "anyOf": [
+       {
+        "enum": [
+         "updated_at",
+         "created_at",
+         "update_count"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Order by this system field instead of by id",
+      "title": "Sort By"
+     },
+     "sort_order": {
+      "default": "desc",
+      "description": "Direction of sort_by: desc or asc.",
+      "enum": [
+       "desc",
+       "asc"
+      ],
+      "title": "Sort Order",
+      "type": "string"
+     },
+     "to_filters": {
+      "description": "Filters the target node must satisfy; needs 'to_labels'",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "title": "To Filters",
+      "type": "array"
+     },
+     "to_labels": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Only edges arriving at a node of one of these labels, or a subtype",
+      "title": "To Labels"
+     }
+    },
+    "required": [
+     "labels"
+    ],
+    "title": "GraphEdgeSearchRequest",
+    "type": "object"
+   },
+   "GraphEdgeSearchResponse": {
+    "properties": {
+     "has_more": {
+      "default": false,
+      "title": "Has More",
+      "type": "boolean"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/GraphEdge"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "limit": {
+      "default": 0,
+      "title": "Limit",
+      "type": "integer"
+     },
+     "offset": {
+      "default": 0,
+      "title": "Offset",
+      "type": "integer"
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "total_count": {
+      "default": 0,
+      "title": "Total Count",
+      "type": "integer"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+     }
+    },
+    "title": "GraphEdgeSearchResponse",
     "type": "object"
    },
    "GraphEnforcementMode": {
@@ -3898,6 +4588,7 @@
         "type": "null"
        }
       ],
+      "description": "Only with detail 'full'",
       "title": "Edge Id"
      },
      "edge_label": {
@@ -3911,24 +4602,149 @@
       ],
       "title": "Edge Label"
      },
+     "edge_meta": {
+      "anyOf": [
+       {
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "With detail 'full': the edge's created_at, updated_at, created_by, last_updated_by, update_count",
+      "title": "Edge Meta"
+     },
      "edge_properties": {
       "title": "Edge Properties",
       "type": "object"
      },
      "node": {
       "$ref": "#/components/schemas/GraphNode"
+     },
+     "origin": {
+      "anyOf": [
+       {
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "With several start nodes: the one this edge hangs off",
+      "title": "Origin"
      }
     },
     "title": "GraphNeighbor",
     "type": "object"
    },
-   "GraphNeighborsResponse": {
+   "GraphNeighborsRequest": {
+    "additionalProperties": false,
     "properties": {
-     "items": {
+     "detail": {
+      "default": "keys",
+      "description": "'keys' returns each node as its label and key properties -- enough to tell entities apart. A node whose type declares no keys keeps its id and properties. 'full' returns id, label and every property. Edge properties are always returned.",
+      "enum": [
+       "keys",
+       "full"
+      ],
+      "title": "Detail",
+      "type": "string"
+     },
+     "direction": {
+      "default": "both",
+      "description": "One of 'both', 'outgoing', 'incoming', as seen from the node",
+      "enum": [
+       "both",
+       "outgoing",
+       "incoming"
+      ],
+      "title": "Direction",
+      "type": "string"
+     },
+     "edge_filters": {
+      "description": "Filters the edge must satisfy, as in node search",
       "items": {
-       "$ref": "#/components/schemas/GraphNeighbor"
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
       },
-      "title": "Items",
+      "title": "Edge Filters",
+      "type": "array"
+     },
+     "edge_label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Restrict to this edge label",
+      "title": "Edge Label"
+     },
+     "key": {
+      "anyOf": [
+       {
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Key properties of the node to expand from, e.g. {\"hostname\": \"web-01\"}. A subset of the keys is enough when it names one node.",
+      "title": "Key"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Label of the node to expand from, with 'key'",
+      "title": "Label"
+     },
+     "limit": {
+      "default": 50,
+      "description": "Maximum number of rows to return, 1 to 200.",
+      "maximum": 200.0,
+      "minimum": 1.0,
+      "title": "Limit",
+      "type": "integer"
+     },
+     "node_filters": {
+      "description": "Filters the neighbour must satisfy, as in node search",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "title": "Node Filters",
       "type": "array"
      },
      "node_id": {
@@ -3940,7 +4756,127 @@
         "type": "null"
        }
       ],
+      "description": "Id of the node to expand from. Only for a node returned with an id; otherwise pass 'label' and 'key'.",
       "title": "Node Id"
+     },
+     "node_labels": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Only neighbours carrying one of these labels",
+      "title": "Node Labels"
+     },
+     "nodes": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/NodeRef"
+        },
+        "maxItems": 50,
+        "minItems": 1,
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Expand several nodes at once, in place of node_id / label + key. One limit spans them all; each item names its origin.",
+      "title": "Nodes"
+     },
+     "offset": {
+      "default": 0,
+      "description": "Number of matching rows to skip, for paging.",
+      "minimum": 0.0,
+      "title": "Offset",
+      "type": "integer"
+     },
+     "select_properties": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Return each node's key plus only these properties, under 'properties'. Overrides 'detail'.",
+      "title": "Select Properties"
+     },
+     "summary": {
+      "default": false,
+      "description": "Return only counts per edge label, direction and neighbour label, no rows",
+      "title": "Summary",
+      "type": "boolean"
+     }
+    },
+    "title": "GraphNeighborsRequest",
+    "type": "object"
+   },
+   "GraphNeighborsResponse": {
+    "properties": {
+     "has_more": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The limit cut the list: narrow with 'edge_label'",
+      "title": "Has More"
+     },
+     "items": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/GraphNeighbor"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Items"
+     },
+     "node": {
+      "anyOf": [
+       {
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The node asked about, as it was named",
+      "title": "Node"
+     },
+     "nodes": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "object"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "With several start nodes, in place of 'node'",
+      "title": "Nodes"
      },
      "request": {
       "$ref": "#/components/schemas/RequestDetails",
@@ -3948,16 +4884,64 @@
        "status": "OK"
       }
      },
+     "summary": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/NeighborCount"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Only with 'summary'",
+      "title": "Summary"
+     },
      "total_count": {
-      "default": 0,
-      "title": "Total Count",
-      "type": "integer"
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Total Count"
+     },
+     "truncated": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The summary counts only the first 200 edges",
+      "title": "Truncated"
+     },
+     "warnings": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warnings"
      }
     },
     "title": "GraphNeighborsResponse",
     "type": "object"
    },
    "GraphNode": {
+    "description": "With detail 'keys' a node is its label and key; one without declared keys keeps its id.",
     "properties": {
      "id": {
       "anyOf": [
@@ -3970,6 +4954,17 @@
       ],
       "title": "Id"
      },
+     "key": {
+      "anyOf": [
+       {
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Key"
+     },
      "label": {
       "anyOf": [
        {
@@ -3981,12 +4976,171 @@
       ],
       "title": "Label"
      },
+     "meta": {
+      "anyOf": [
+       {
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "With detail 'full': created_at, updated_at, created_by, last_updated_by, update_count",
+      "title": "Meta"
+     },
      "properties": {
-      "title": "Properties",
-      "type": "object"
+      "anyOf": [
+       {
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Properties"
      }
     },
     "title": "GraphNode",
+    "type": "object"
+   },
+   "GraphNodeSearchRequest": {
+    "additionalProperties": false,
+    "properties": {
+     "detail": {
+      "default": "keys",
+      "description": "'keys' returns each node as its label and key properties -- enough to tell entities apart. A node whose type declares no keys keeps its id and properties. 'full' returns id, label and every property. Ignored with 'ids', which return every property.",
+      "enum": [
+       "keys",
+       "full"
+      ],
+      "title": "Detail",
+      "type": "string"
+     },
+     "filters": {
+      "description": "All must hold. On an array property a filter holds when any element matches",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "title": "Filters",
+      "type": "array"
+     },
+     "ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Fetch these node ids directly, ignoring the other filters",
+      "title": "Ids"
+     },
+     "include_subtypes": {
+      "default": false,
+      "description": "Also match types whose is_a chain reaches one of 'labels'",
+      "title": "Include Subtypes",
+      "type": "boolean"
+     },
+     "labels": {
+      "description": "The node labels to search; a node matches when it carries any",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 1,
+      "title": "Labels",
+      "type": "array"
+     },
+     "limit": {
+      "default": 50,
+      "description": "Maximum number of rows to return, 1 to 200.",
+      "maximum": 200.0,
+      "minimum": 1.0,
+      "title": "Limit",
+      "type": "integer"
+     },
+     "offset": {
+      "default": 0,
+      "description": "Number of matching rows to skip, for paging.",
+      "minimum": 0.0,
+      "title": "Offset",
+      "type": "integer"
+     },
+     "search_term": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Case-insensitive substring matched against every property the 'labels' declare",
+      "title": "Search Term"
+     },
+     "select_properties": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Return each node's key plus only these properties, under 'properties'. Overrides 'detail'.",
+      "title": "Select Properties"
+     },
+     "sort_by": {
+      "anyOf": [
+       {
+        "enum": [
+         "updated_at",
+         "created_at",
+         "update_count"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Order by this system field instead of by id",
+      "title": "Sort By"
+     },
+     "sort_order": {
+      "default": "desc",
+      "description": "Direction of sort_by: desc or asc.",
+      "enum": [
+       "desc",
+       "asc"
+      ],
+      "title": "Sort Order",
+      "type": "string"
+     }
+    },
+    "required": [
+     "labels"
+    ],
+    "title": "GraphNodeSearchRequest",
     "type": "object"
    },
    "GraphNodeSearchResponse": {
@@ -4023,6 +5177,14 @@
       "default": 0,
       "title": "Total Count",
       "type": "integer"
+     },
+     "warnings": {
+      "description": "Filters naming a property the label does not declare, with suggestions",
+      "items": {
+       "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
      }
     },
     "title": "GraphNodeSearchResponse",
@@ -4030,11 +5192,23 @@
    },
    "GraphOntologyEditRequest": {
     "additionalProperties": false,
-    "description": "Ontology is validated as a whole: related types must arrive together, nothing is\nwritten unless all of it applies.",
+    "description": "Applied to the stored ontology; unnamed types are left untouched. Validated as a whole:\nrelated types must arrive together, nothing is written unless all of it applies.",
     "properties": {
-     "types": {
-      "$ref": "#/components/schemas/OntologyTypeChanges",
-      "description": "Applied to the stored ontology. Unnamed types are left untouched. A type may be named only once across both lists."
+     "delete": {
+      "description": "Types to remove, by kind and label.",
+      "items": {
+       "$ref": "#/components/schemas/OntologyTypeRef"
+      },
+      "title": "Delete",
+      "type": "array"
+     },
+     "upsert": {
+      "description": "Types to create, or to update with only the fields carried.",
+      "items": {
+       "$ref": "#/components/schemas/OntologyTypeUpsert"
+      },
+      "title": "Upsert",
+      "type": "array"
      }
     },
     "title": "GraphOntologyEditRequest",
@@ -4044,6 +5218,18 @@
     "additionalProperties": false,
     "description": "One allowed node or edge type.",
     "properties": {
+     "abstract": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Never written: only an is_a parent or an edge endpoint, searched through its subtypes. May only extend an abstract type. key_properties optional.",
+      "title": "Abstract"
+     },
      "description": {
       "anyOf": [
        {
@@ -4068,7 +5254,7 @@
         "type": "null"
        }
       ],
-      "description": "Allowed source/target label pairs. Edges only; empty means unconstrained.",
+      "description": "Allowed source/target label pairs, each optionally narrowed by from_filters / to_filters on the endpoints' key properties. Edges only; empty means the nearest is_a ancestor's apply, or unconstrained without one. An edge must satisfy every level of its is_a chain that declares endpoints.",
       "title": "Endpoints"
      },
      "is_a": {
@@ -4085,10 +5271,10 @@
      },
      "json_schema": {
       "$ref": "#/components/schemas/OntologyTypeSchema-Input",
-      "description": "Property declarations and required names for this type."
+      "description": "Properties rows of this type may carry and which of them are required."
      },
      "key_properties": {
-      "description": "Properties whose values derive the entity id. Stored sorted; order does not affect the id. Required for nodes. Empty on an edge means one edge per source, target and label; non-empty allows parallel edges.",
+      "description": "Properties whose values derive the entity id. Stored sorted; order does not affect the id. Required for concrete nodes. Empty on an edge means one edge per source, target and label; non-empty allows parallel edges.",
       "items": {
        "type": "string"
       },
@@ -4129,6 +5315,18 @@
     "additionalProperties": false,
     "description": "One allowed node or edge type.",
     "properties": {
+     "abstract": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Never written: only an is_a parent or an edge endpoint, searched through its subtypes. May only extend an abstract type. key_properties optional.",
+      "title": "Abstract"
+     },
      "description": {
       "anyOf": [
        {
@@ -4153,7 +5351,7 @@
         "type": "null"
        }
       ],
-      "description": "Allowed source/target label pairs. Edges only; empty means unconstrained.",
+      "description": "Allowed source/target label pairs, each optionally narrowed by from_filters / to_filters on the endpoints' key properties. Edges only; empty means the nearest is_a ancestor's apply, or unconstrained without one. An edge must satisfy every level of its is_a chain that declares endpoints.",
       "title": "Endpoints"
      },
      "is_a": {
@@ -4170,10 +5368,10 @@
      },
      "json_schema": {
       "$ref": "#/components/schemas/OntologyTypeSchema-Output",
-      "description": "Property declarations and required names for this type."
+      "description": "Properties rows of this type may carry and which of them are required."
      },
      "key_properties": {
-      "description": "Properties whose values derive the entity id. Stored sorted; order does not affect the id. Required for nodes. Empty on an edge means one edge per source, target and label; non-empty allows parallel edges.",
+      "description": "Properties whose values derive the entity id. Stored sorted; order does not affect the id. Required for concrete nodes. Empty on an edge means one edge per source, target and label; non-empty allows parallel edges.",
       "items": {
        "type": "string"
       },
@@ -4240,34 +5438,45 @@
     "title": "GraphOntologyHistoryResponse",
     "type": "object"
    },
-   "GraphOntologyResponse": {
+   "GraphOntologyPreviewResponse": {
+    "description": "What an ontology edit would do. Nothing is written.",
     "properties": {
-     "detail": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Detail"
+     "applicable": {
+      "default": false,
+      "description": "Applying now would succeed",
+      "title": "Applicable",
+      "type": "boolean"
      },
-     "edge_type_count": {
-      "default": 0,
-      "title": "Edge Type Count",
-      "type": "integer"
+     "blocked": {
+      "description": "Changes the data refuses: re-keying or deleting a populated type",
+      "items": {
+       "type": "string"
+      },
+      "title": "Blocked",
+      "type": "array"
      },
-     "enforcement": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Enforcement"
+     "changes": {
+      "description": "e.g. \"added node 'service'\"",
+      "items": {
+       "type": "string"
+      },
+      "title": "Changes",
+      "type": "array"
+     },
+     "deletes_with_rows": {
+      "description": "Types the batch deletes that still hold rows",
+      "items": {
+       "$ref": "#/components/schemas/DeclaredType"
+      },
+      "title": "Deletes With Rows",
+      "type": "array"
+     },
+     "findings": {
+      "items": {
+       "$ref": "#/components/schemas/OntologyFinding"
+      },
+      "title": "Findings",
+      "type": "array"
      },
      "graph_id": {
       "anyOf": [
@@ -4280,49 +5489,6 @@
       ],
       "title": "Graph Id"
      },
-     "graph_name": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Graph Name"
-     },
-     "has_more": {
-      "default": false,
-      "title": "Has More",
-      "type": "boolean"
-     },
-     "limit": {
-      "default": 0,
-      "title": "Limit",
-      "type": "integer"
-     },
-     "name": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Name"
-     },
-     "node_type_count": {
-      "default": 0,
-      "description": "Node types declared by the graph, not by this page",
-      "title": "Node Type Count",
-      "type": "integer"
-     },
-     "offset": {
-      "default": 0,
-      "title": "Offset",
-      "type": "integer"
-     },
      "ontology_version": {
       "anyOf": [
        {
@@ -4333,6 +5499,33 @@
        }
       ],
       "title": "Ontology Version"
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     }
+    },
+    "title": "GraphOntologyPreviewResponse",
+    "type": "object"
+   },
+   "GraphOntologyResponse": {
+    "properties": {
+     "has_more": {
+      "default": false,
+      "title": "Has More",
+      "type": "boolean"
+     },
+     "limit": {
+      "default": 0,
+      "title": "Limit",
+      "type": "integer"
+     },
+     "offset": {
+      "default": 0,
+      "title": "Offset",
+      "type": "integer"
      },
      "request": {
       "$ref": "#/components/schemas/RequestDetails",
@@ -4499,7 +5692,7 @@
     "description": "What the graph actually holds, against what it declares.",
     "properties": {
      "edges": {
-      "$ref": "#/components/schemas/LabelCounts"
+      "$ref": "#/components/schemas/EdgeCounts"
      },
      "empty_edge_labels": {
       "items": {
@@ -4550,7 +5743,7 @@
       "title": "Name"
      },
      "nodes": {
-      "$ref": "#/components/schemas/LabelCounts"
+      "$ref": "#/components/schemas/NodeCounts"
      },
      "query_dialect": {
       "anyOf": [
@@ -4572,6 +5765,178 @@
      }
     },
     "title": "GraphOverviewResponse",
+    "type": "object"
+   },
+   "GraphPath": {
+    "properties": {
+     "edges": {
+      "description": "edges[i] joins nodes[i] and nodes[i+1]",
+      "items": {
+       "$ref": "#/components/schemas/PathHop"
+      },
+      "title": "Edges",
+      "type": "array"
+     },
+     "length": {
+      "default": 0,
+      "title": "Length",
+      "type": "integer"
+     },
+     "nodes": {
+      "items": {
+       "$ref": "#/components/schemas/GraphNode"
+      },
+      "title": "Nodes",
+      "type": "array"
+     }
+    },
+    "title": "GraphPath",
+    "type": "object"
+   },
+   "GraphPathsRequest": {
+    "additionalProperties": false,
+    "properties": {
+     "edge_labels": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Only walk edges of these labels",
+      "title": "Edge Labels"
+     },
+     "from_node": {
+      "$ref": "#/components/schemas/NodeRef",
+      "description": "The node to start from"
+     },
+     "include_subtypes": {
+      "default": false,
+      "description": "Also reach types whose is_a chain reaches one of 'to_labels'",
+      "title": "Include Subtypes",
+      "type": "boolean"
+     },
+     "max_depth": {
+      "default": 3,
+      "description": "The most hops a path may take",
+      "maximum": 5.0,
+      "minimum": 1.0,
+      "title": "Max Depth",
+      "type": "integer"
+     },
+     "to_filters": {
+      "description": "Filters the nodes to reach must satisfy, as in node search; needs 'to_labels'",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "title": "To Filters",
+      "type": "array"
+     },
+     "to_labels": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Instead of 'to_node': reach the nearest node of one of these labels that 'to_filters' match",
+      "title": "To Labels"
+     },
+     "to_node": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/NodeRef"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The node to reach; or leave it out and send 'to_labels'"
+     },
+     "via_labels": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Only pass through nodes of these labels or their subtypes; the start and the node reached are exempt",
+      "title": "Via Labels"
+     }
+    },
+    "required": [
+     "from_node"
+    ],
+    "title": "GraphPathsRequest",
+    "type": "object"
+   },
+   "GraphPathsResponse": {
+    "properties": {
+     "from": {
+      "title": "From",
+      "type": "object"
+     },
+     "paths": {
+      "description": "Every shortest path, at most 10; empty when none is within max_depth",
+      "items": {
+       "$ref": "#/components/schemas/GraphPath"
+      },
+      "title": "Paths",
+      "type": "array"
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "to": {
+      "title": "To",
+      "type": "object"
+     },
+     "truncated": {
+      "default": false,
+      "description": "The search was cut on a very connected neighbourhood",
+      "title": "Truncated",
+      "type": "boolean"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+     }
+    },
+    "title": "GraphPathsResponse",
     "type": "object"
    },
    "GraphProperties": {
@@ -4648,7 +6013,7 @@
     "type": "object"
    },
    "GraphQueryRequest": {
-    "description": "A read-only statement in the backing store's own language.\n\nThe dialect depends on the backend and is reported by the overview endpoint. Writes are\nrejected by the database itself, not by inspecting this text.\n\nOne database holds every graph, so the statement must name this graph's own objects:\nwrite $node and $edge where a node label or relationship type belongs and they are\nreplaced with them. A statement naming no object of this graph, or one belonging to\nanother graph, is refused.",
+    "description": "A read-only statement in the backing store's own language.\n\nThe dialect depends on the backend and is reported by the overview endpoint. Writes are\nrejected by the database itself, not by inspecting this text.\n\nOne database holds every graph, so the statement must name this graph's own objects:\nwrite $node and $edge where a node label or relationship type belongs, and $graph for\nthe property graph, and they are replaced with them. A statement naming no object of this\ngraph, or one belonging to another graph, is refused.",
     "properties": {
      "params": {
       "description": "Values bound into the statement's placeholders",
@@ -4656,7 +6021,7 @@
       "type": "object"
      },
      "query": {
-      "description": "The statement to run, with $node and $edge where this graph's node label and relationship type belong",
+      "description": "The statement to run, with $node and $edge where this graph's node label and relationship type belong, and $graph for the property graph a GoogleSQL statement opens with",
       "title": "Query",
       "type": "string"
      }
@@ -5142,6 +6507,7 @@
      "ontology_graph",
      "agentic_workflow",
      "decision_model",
+     "preprocessor",
      "agentic_workflows_custom_tools"
     ],
     "title": "IntegrationType",
@@ -6046,7 +7412,14 @@
       "anyOf": [
        {
         "additionalProperties": {
-         "$ref": "#/components/schemas/PreprocessingProfiles"
+         "anyOf": [
+          {
+           "$ref": "#/components/schemas/DecisionPointPreprocessor"
+          },
+          {
+           "$ref": "#/components/schemas/CustomCodePreprocessor"
+          }
+         ]
         },
         "type": "object"
        },
@@ -6054,10 +7427,13 @@
         "type": "null"
        }
       ],
-      "description": "Preprocessor profiles. Key is the preprocessor profile name, value is the preprocessor profile description. If not provided, the default processor will be used. Allowed values are: `raw_preprocessor, relaxed_preprocessor, unique_sorted_csv_preprocessor, default_preprocessor`.\n\n**Preprocessor descriptions:**\n- **raw_preprocessor**: Comma separated values are joined with a space. No extra preprocessing is applied. NA token is added if the value is empty.\n- **relaxed_preprocessor**: Replaces special characters with spaces. Converts number fields to words. Keeps digits when combined with alphabetical characters. Does not replace empty tokens with NA token.\n- **unique_sorted_csv_preprocessor**: If the string contains comma separated values, it deduplicates and sorts the values. Otherwise, it keeps the exact string.\n- **default_preprocessor**: Uses only alphabetic characters and underscores. Removes standard english stopwords. Replaces dashes with underscores. Replaces empty tokens with NA token.",
+      "description": "How each decision point is preprocessed. Key is the decision point name; the value is either a built-in profile name or an object binding it to a code block integration. If not provided, the default processor will be used. Allowed profiles are: `raw_preprocessor, relaxed_preprocessor, unique_sorted_csv_preprocessor, word_only_preprocessor, default_preprocessor`.\n\n**Preprocessor descriptions:**\n- **raw_preprocessor**: Comma separated values are joined with a space. No extra preprocessing is applied. NA token is added if the value is empty.\n- **relaxed_preprocessor**: Replaces special characters with spaces. Converts number fields to words. Keeps digits when combined with alphabetical characters. Does not replace empty tokens with NA token.\n- **unique_sorted_csv_preprocessor**: If the string contains comma separated values, it deduplicates and sorts the values. Otherwise, it keeps the exact string.\n- **word_only_preprocessor**: Uses only alphabetic characters and underscores. Removes standard english stopwords. Replaces dashes with underscores. Replaces empty tokens with NA token.\n- **default_preprocessor**: Deprecated alias of `word_only_preprocessor`.\n\nA custom code preprocessor is given as `{\"integration_id\": ...}`, normally a reference so the id resolves per environment. The pinned version is not part of the binding: version identity is per environment, so an applied job uses the integration's current code.",
       "example": {
-       "decision_point_1": "default_preprocessor",
-       "decision_point_2": "relaxed_preprocessor"
+       "decision_point_1": "word_only_preprocessor",
+       "decision_point_2": "relaxed_preprocessor",
+       "decision_point_3": {
+        "integration_id": "${my_code_block.internal_id}"
+       }
       },
       "title": "Decision Point Preprocessors"
      },
@@ -6503,24 +7879,6 @@
     "title": "Label",
     "type": "object"
    },
-   "LabelCounts": {
-    "properties": {
-     "by_label": {
-      "additionalProperties": {
-       "type": "integer"
-      },
-      "title": "By Label",
-      "type": "object"
-     },
-     "total": {
-      "default": 0,
-      "title": "Total",
-      "type": "integer"
-     }
-    },
-    "title": "LabelCounts",
-    "type": "object"
-   },
    "LogLevelReq": {
     "properties": {
      "level": {
@@ -6659,6 +8017,68 @@
     "title": "MutationResult",
     "type": "object"
    },
+   "NeighborCount": {
+    "properties": {
+     "count": {
+      "default": 0,
+      "title": "Count",
+      "type": "integer"
+     },
+     "direction": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Direction"
+     },
+     "edge_label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Edge Label"
+     },
+     "node_label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Node Label"
+     }
+    },
+    "title": "NeighborCount",
+    "type": "object"
+   },
+   "NodeCounts": {
+    "properties": {
+     "by_label": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/NodeLabelSummary"
+      },
+      "title": "By Label",
+      "type": "object"
+     },
+     "total": {
+      "default": 0,
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "title": "NodeCounts",
+    "type": "object"
+   },
    "NodeDelete": {
     "additionalProperties": false,
     "properties": {
@@ -6693,6 +8113,117 @@
      }
     },
     "title": "NodeDelete",
+    "type": "object"
+   },
+   "NodeFilter": {
+    "additionalProperties": false,
+    "properties": {
+     "case_sensitive": {
+      "default": false,
+      "description": "Strings ignore case, and for 'eq' and 'in' surrounding whitespace, unless set",
+      "title": "Case Sensitive",
+      "type": "boolean"
+     },
+     "op": {
+      "default": "eq",
+      "description": "'in' takes a list; 'exists' and 'missing' take no value; 'gt', 'gte', 'lt', 'lte' compare numbers or ISO-8601 datetimes",
+      "enum": [
+       "eq",
+       "in",
+       "contains",
+       "starts_with",
+       "ends_with",
+       "exists",
+       "missing",
+       "gt",
+       "gte",
+       "lt",
+       "lte"
+      ],
+      "title": "Op",
+      "type": "string"
+     },
+     "property": {
+      "description": "The property to test, or a system field: created_at, updated_at, created_by, last_updated_by, update_count",
+      "title": "Property",
+      "type": "string"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "items": {
+         "anyOf": [
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          }
+         ]
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Value to compare with; a list for 'in', omitted for 'exists' and 'missing'.",
+      "title": "Value"
+     }
+    },
+    "required": [
+     "property"
+    ],
+    "title": "NodeFilter",
+    "type": "object"
+   },
+   "NodeLabelSummary": {
+    "properties": {
+     "count": {
+      "default": 0,
+      "title": "Count",
+      "type": "integer"
+     },
+     "is_a": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is A"
+     },
+     "key_properties": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "What identifies a node of this label: what to search on",
+      "title": "Key Properties"
+     }
+    },
+    "title": "NodeLabelSummary",
     "type": "object"
    },
    "NodeMutationResults": {
@@ -6736,6 +8267,50 @@
      }
     },
     "title": "NodeMutations",
+    "type": "object"
+   },
+   "NodeRef": {
+    "additionalProperties": false,
+    "description": "A node named by label + key properties, or by id for one returned with an id.",
+    "properties": {
+     "id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Node id, for a node returned with an id.",
+      "title": "Id"
+     },
+     "key": {
+      "anyOf": [
+       {
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Key properties; a subset is enough when it names one node",
+      "title": "Key"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Node label, given with 'key'.",
+      "title": "Label"
+     }
+    },
+    "title": "NodeRef",
     "type": "object"
    },
    "NodeUpsert": {
@@ -6833,6 +8408,7 @@
      },
      "missing_required": {
       "default": 0,
+      "description": "Rows flagged outside the schema: a required property missing, or, for edges, endpoints the type's 'endpoints' (labels or filters) do not allow.",
       "title": "Missing Required",
       "type": "integer"
      },
@@ -6854,6 +8430,74 @@
      }
     },
     "title": "NonConformantType",
+    "type": "object"
+   },
+   "NotFilter": {
+    "additionalProperties": false,
+    "properties": {
+     "not": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/NodeFilter"
+       },
+       {
+        "$ref": "#/components/schemas/AndFilter"
+       },
+       {
+        "$ref": "#/components/schemas/OrFilter"
+       },
+       {
+        "$ref": "#/components/schemas/NotFilter"
+       }
+      ],
+      "description": "Does not hold",
+      "title": "Not"
+     }
+    },
+    "required": [
+     "not"
+    ],
+    "title": "NotFilter",
+    "type": "object"
+   },
+   "OntologyFinding": {
+    "properties": {
+     "message": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Message"
+     },
+     "path": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Path"
+     },
+     "severity": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "'error' blocks a save, 'warning' does not",
+      "title": "Severity"
+     }
+    },
+    "title": "OntologyFinding",
     "type": "object"
    },
    "OntologyKind": {
@@ -7115,29 +8759,6 @@
     "title": "OntologyStaleness",
     "type": "object"
    },
-   "OntologyTypeChanges": {
-    "additionalProperties": false,
-    "properties": {
-     "delete": {
-      "description": "Types to remove, by kind and label.",
-      "items": {
-       "$ref": "#/components/schemas/OntologyTypeRef"
-      },
-      "title": "Delete",
-      "type": "array"
-     },
-     "upsert": {
-      "description": "Types to create, or to update with only the fields carried.",
-      "items": {
-       "$ref": "#/components/schemas/OntologyTypeUpsert"
-      },
-      "title": "Upsert",
-      "type": "array"
-     }
-    },
-    "title": "OntologyTypeChanges",
-    "type": "object"
-   },
    "OntologyTypeRef": {
     "additionalProperties": false,
     "properties": {
@@ -7209,6 +8830,18 @@
     "additionalProperties": false,
     "description": "Only carried fields are applied; a new type must be complete.",
     "properties": {
+     "abstract": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Never written: only an is_a parent or an edge endpoint, searched through its subtypes. May only extend an abstract type; key_properties optional.",
+      "title": "Abstract"
+     },
      "description": {
       "anyOf": [
        {
@@ -7233,7 +8866,7 @@
         "type": "null"
        }
       ],
-      "description": "Allowed {'from': ..., 'to': ...} label pairs. Edges only; empty means unconstrained. Replaced whole.",
+      "description": "Allowed {'from': ..., 'to': ...} label pairs, each optionally with 'from_filters' / 'to_filters' (search filter grammar, endpoint key properties only) the endpoint nodes must satisfy. Edges only; empty means the nearest is_a ancestor's apply, else unconstrained. Replaced whole.",
       "title": "Endpoints"
      },
      "is_a": {
@@ -7257,7 +8890,7 @@
         "type": "null"
        }
       ],
-      "description": "'properties' merges by name and a property mapped to null is removed; 'required' is replaced whole, being a set.",
+      "description": "'properties' merges by name and a property mapped to null is removed; 'required' is replaced whole, being a set. A property 'default' fills rows that omit it, and is refused on key properties.",
       "title": "Json Schema"
      },
      "key_properties": {
@@ -7272,7 +8905,7 @@
         "type": "null"
        }
       ],
-      "description": "Ordered properties deriving the entity id. Required for nodes. Replaced whole; changing it on a type holding rows is refused.",
+      "description": "Ordered properties deriving the entity id. Required for nodes. Replaced whole. On a type holding rows a key may be added, but dropping or retyping one is refused.",
       "title": "Key Properties"
      },
      "kind": {
@@ -7303,6 +8936,38 @@
      "label"
     ],
     "title": "OntologyTypeUpsert",
+    "type": "object"
+   },
+   "OrFilter": {
+    "additionalProperties": false,
+    "properties": {
+     "or": {
+      "description": "At least one holds",
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/NodeFilter"
+        },
+        {
+         "$ref": "#/components/schemas/AndFilter"
+        },
+        {
+         "$ref": "#/components/schemas/OrFilter"
+        },
+        {
+         "$ref": "#/components/schemas/NotFilter"
+        }
+       ]
+      },
+      "minItems": 1,
+      "title": "Or",
+      "type": "array"
+     }
+    },
+    "required": [
+     "or"
+    ],
+    "title": "OrFilter",
     "type": "object"
    },
    "Outlier": {
@@ -7372,6 +9037,35 @@
      }
     },
     "title": "Outliers",
+    "type": "object"
+   },
+   "PathHop": {
+    "properties": {
+     "direction": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "'outgoing' when the edge points along the path",
+      "title": "Direction"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     }
+    },
+    "title": "PathHop",
     "type": "object"
    },
    "PerUserFeedbackMetrics": {
@@ -7564,16 +9258,6 @@
     ],
     "title": "PlatformMetricsResponse",
     "type": "object"
-   },
-   "PreprocessingProfiles": {
-    "enum": [
-     "raw_preprocessor",
-     "relaxed_preprocessor",
-     "unique_sorted_csv_preprocessor",
-     "default_preprocessor"
-    ],
-    "title": "PreprocessingProfiles",
-    "type": "string"
    },
    "ProcessedFieldStats": {
     "properties": {
@@ -8933,7 +10617,7 @@
           },
           "category": "Decision intelligence",
           "decision_point_preprocessors": {
-           "suricata.eve.alert.category": "default_preprocessor"
+           "suricata.eve.alert.category": "word_only_preprocessor"
           },
           "decision_points": [
            "suricata.eve.alert.category",
@@ -9720,11 +11404,32 @@
    },
    "TrainingConfigValidationCandidateConfig": {
     "properties": {
+     "added_decision_points": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Added Decision Points",
+      "type": "array"
+     },
+     "changed_decision_points": {
+      "items": {
+       "$ref": "#/components/schemas/DecisionPointPreprocessorChange"
+      },
+      "title": "Changed Decision Points",
+      "type": "array"
+     },
      "decision_point_preprocessors": {
       "anyOf": [
        {
         "additionalProperties": {
-         "type": "string"
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "$ref": "#/components/schemas/CustomCodePreprocessor"
+          }
+         ]
         },
         "type": "object"
        },
@@ -9752,6 +11457,13 @@
       ],
       "title": "Name"
      },
+     "removed_decision_points": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Removed Decision Points",
+      "type": "array"
+     },
      "same_as_current_config": {
       "anyOf": [
        {
@@ -9765,6 +11477,93 @@
      }
     },
     "title": "TrainingConfigValidationCandidateConfig",
+    "type": "object"
+   },
+   "TrainingConfigValidationConfigurationsRequest": {
+    "properties": {
+     "buckets_cutoff_date": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Only buckets whose last entry is newer than this timestamp are used",
+      "title": "Buckets Cutoff Date"
+     },
+     "iterations": {
+      "default": 1,
+      "description": "How many models the run would train, and the number of folds of a k-fold run",
+      "maximum": 10.0,
+      "minimum": 1.0,
+      "title": "Iterations",
+      "type": "integer"
+     },
+     "selection": {
+      "$ref": "#/components/schemas/DecisionPointsSelection",
+      "description": "Target decision point set to derive configurations from."
+     },
+     "split_strategy": {
+      "$ref": "#/components/schemas/TrainingConfigValidationSplitStrategy",
+      "default": "random",
+      "description": "Only used to report the conditions a run under this strategy would be refused for"
+     }
+    },
+    "required": [
+     "selection"
+    ],
+    "title": "TrainingConfigValidationConfigurationsRequest",
+    "type": "object"
+   },
+   "TrainingConfigValidationConfigurationsResponse": {
+    "properties": {
+     "blockers": {
+      "description": "Conditions that make a run impossible, it would be refused",
+      "items": {
+       "type": "string"
+      },
+      "title": "Blockers",
+      "type": "array"
+     },
+     "configurations": {
+      "items": {
+       "$ref": "#/components/schemas/TrainingConfigValidationCandidateConfig"
+      },
+      "title": "Configurations",
+      "type": "array"
+     },
+     "configurations_count": {
+      "title": "Configurations Count",
+      "type": "integer"
+     },
+     "models_to_train": {
+      "description": "Configurations plus the baseline, over all iterations",
+      "title": "Models To Train",
+      "type": "integer"
+     },
+     "request": {
+      "$ref": "#/components/schemas/RequestDetails",
+      "default": {
+       "status": "OK"
+      }
+     },
+     "warnings": {
+      "description": "Conditions a run copes with",
+      "items": {
+       "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+     }
+    },
+    "required": [
+     "configurations_count",
+     "models_to_train"
+    ],
+    "title": "TrainingConfigValidationConfigurationsResponse",
     "type": "object"
    },
    "TrainingConfigValidationCreateResponse": {
@@ -9878,14 +11677,20 @@
       "title": "Buckets Cutoff Date"
      },
      "configurations": {
-      "description": "Candidate decision point sets to try. Each is trained and scored separately against the job's current configuration, which is always included as the baseline and must not be repeated here.",
-      "items": {
-       "$ref": "#/components/schemas/ConfigurationSpec"
-      },
-      "maxItems": 5,
-      "minItems": 1,
-      "title": "Configurations",
-      "type": "array"
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/ConfigurationSpec"
+        },
+        "maxItems": 15,
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Candidate decision point sets to try. Each is trained and scored separately against the job's current configuration, which is always included as the baseline and must not be repeated here. Give this or `selection`.",
+      "title": "Configurations"
      },
      "iterations": {
       "default": 1,
@@ -9907,6 +11712,17 @@
       "description": "Fixes the random splits so a run can be repeated and get the same scores. Omit it to let each run split differently.",
       "title": "Seed"
      },
+     "selection": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/DecisionPointsSelection"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Alternative to `configurations`: the configurations are generated from the difference between this selection and the job's current configuration"
+     },
      "split_strategy": {
       "$ref": "#/components/schemas/TrainingConfigValidationSplitStrategy",
       "default": "random",
@@ -9921,9 +11737,6 @@
       "type": "number"
      }
     },
-    "required": [
-     "configurations"
-    ],
     "title": "TrainingConfigValidationRequest",
     "type": "object"
    },
@@ -14365,10 +16178,10 @@
     ]
    }
   },
-  "/api/v2/graph/{graph_ref}/data/neighbors": {
-   "get": {
-    "description": "Returns each edge touching the node and the node on the other end, with 'direction' reported as 'outgoing' or 'incoming' relative to the node asked about. Restrict with 'direction' and 'edge_label'. Depth is always one hop: walk further by calling again with an id from the response.",
-    "operationId": "v2_neighbors",
+  "/api/v2/graph/{graph_ref}/data/delete": {
+   "post": {
+    "description": "Deletes every node ('kind' 'node') or edge ('kind' 'edge') of 'labels' that the filters match, in the node and edge search grammar. A node takes every edge touching it along. No filters deletes every row of 'labels'.\n\n'dry_run' defaults to true: the response then carries 'matched' and a 'sample' and nothing is deleted. Send 'dry_run' false to delete; the response carries 'deleted'. Not reversible.\n\nNeeds the 'delete:graph_data' scope on the graph.",
+    "operationId": "v2_delete_data",
     "parameters": [
      {
       "description": "Graph id or name. An id match takes precedence over a name.",
@@ -14379,61 +16192,6 @@
        "description": "Graph id or name. An id match takes precedence over a name.",
        "title": "Graph Ref",
        "type": "string"
-      }
-     },
-     {
-      "description": "Id of the node to expand from",
-      "in": "query",
-      "name": "node_id",
-      "required": true,
-      "schema": {
-       "description": "Id of the node to expand from",
-       "title": "Node Id",
-       "type": "string"
-      }
-     },
-     {
-      "description": "One of 'both', 'outgoing', 'incoming', as seen from node_id",
-      "in": "query",
-      "name": "direction",
-      "required": false,
-      "schema": {
-       "default": "both",
-       "description": "One of 'both', 'outgoing', 'incoming', as seen from node_id",
-       "title": "Direction",
-       "type": "string"
-      }
-     },
-     {
-      "description": "Restrict to this edge label",
-      "in": "query",
-      "name": "edge_label",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "description": "Restrict to this edge label",
-       "title": "Edge Label"
-      }
-     },
-     {
-      "description": "Maximum number of neighbors to return, 1 to 200.",
-      "in": "query",
-      "name": "limit",
-      "required": false,
-      "schema": {
-       "default": 50,
-       "description": "Maximum number of neighbors to return, 1 to 200.",
-       "maximum": 200,
-       "minimum": 1,
-       "title": "Limit",
-       "type": "integer"
       }
      },
      {
@@ -14455,6 +16213,166 @@
       }
      }
     ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GraphDataDeleteRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GraphDataDeleteResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete the nodes or edges matching a search",
+    "tags": [
+     "Management/Graph"
+    ],
+    "x-arcanna-scopes": []
+   }
+  },
+  "/api/v2/graph/{graph_ref}/data/edges/search": {
+   "post": {
+    "description": "Finds edges of the given 'labels' across the whole graph, by their own properties and by what they connect. 'filters' apply to the edge, 'from_filters' to the node it leaves and 'to_filters' to the node it arrives at, all in the node search grammar, system fields included. Endpoint filters are checked against 'from_labels' / 'to_labels', which they therefore need.\n\nWith 'detail' 'keys' (the default) each edge is its 'label', 'properties' and both endpoints by 'label' and 'key'. 'full' adds 'edge_id', 'meta' and the endpoints with every property. 'sort_by' and 'sort_order' order as in node search. Results are paged with 'limit' and 'offset' and carry the total ignoring both.\n\nFor the edges of one known node, the neighbors endpoint is cheaper.",
+    "operationId": "v2_search_edges",
+    "parameters": [
+     {
+      "description": "Graph id or name. An id match takes precedence over a name.",
+      "in": "path",
+      "name": "graph_ref",
+      "required": true,
+      "schema": {
+       "description": "Graph id or name. An id match takes precedence over a name.",
+       "title": "Graph Ref",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GraphEdgeSearchRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GraphEdgeSearchResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Search the edges of a graph",
+    "tags": [
+     "Management/Graph"
+    ],
+    "x-arcanna-scopes": [
+     "read:graph_data"
+    ]
+   }
+  },
+  "/api/v2/graph/{graph_ref}/data/neighbors": {
+   "post": {
+    "description": "Returns each edge touching the node and the node on the other end, with 'direction' reported as 'outgoing' or 'incoming' relative to the node asked about. Restrict with 'direction' and 'edge_label', with 'node_labels' on the neighbour, and with 'node_filters' and 'edge_filters' -- the node search grammar, applied to the neighbour and to the edge.\n\nName the node by 'label' and 'key', its key properties (a subset is enough when it names one node; case and surrounding whitespace are ignored), or by 'node_id' for a node that was returned with an id. 'node' echoes what was asked about. 'nodes' expands up to 50 nodes at once: 'nodes' is echoed in place of 'node', one 'limit' spans them all, and every item names its 'origin'.\n\nNeighbours follow the same 'detail' and 'select_properties' rules as node search; 'full' also returns each 'edge_id'. Edge properties are always returned. 'has_more' means the limit cut the list: narrow it, or page with 'offset'. 'warnings' flags filters on properties the labels do not declare.\n\n'summary' returns counts per edge label, direction and neighbour label instead of rows; 'truncated' means they cover only the first 200 edges.\n\nDepth is always one hop: walk further by calling again with the 'label' and 'key' of a node in the response.",
+    "operationId": "v2_neighbors",
+    "parameters": [
+     {
+      "description": "Graph id or name. An id match takes precedence over a name.",
+      "in": "path",
+      "name": "graph_ref",
+      "required": true,
+      "schema": {
+       "description": "Graph id or name. An id match takes precedence over a name.",
+       "title": "Graph Ref",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GraphNeighborsRequest"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
      "200": {
       "content": {
@@ -14477,7 +16395,7 @@
       "description": "Validation Error"
      }
     },
-    "summary": "List the edges one hop from a node",
+    "summary": "List the edges one hop from one or several nodes",
     "tags": [
      "Management/Graph"
     ],
@@ -14486,9 +16404,9 @@
     ]
    }
   },
-  "/api/v2/graph/{graph_ref}/data/nodes": {
-   "get": {
-    "description": "Finds nodes by label, by property equality, or by substring. Combine 'label' with 'include_subtypes' to match everything whose is_a chain reaches it. 'properties' is a JSON object of exact matches. 'contains' is a case-insensitive substring tested against the key properties of the searched type, or of every node type when no label is given.\n\nPass 'ids' to fetch known nodes directly; the other filters are then ignored. Results are paged with 'limit' and 'offset' and carry the total ignoring both.",
+  "/api/v2/graph/{graph_ref}/data/nodes/search": {
+   "post": {
+    "description": "Finds nodes of the given 'labels' by any of their properties. A node matches when it carries one of 'labels', or with 'include_subtypes' when its is_a chain reaches one. Every filter given must hold.\n\nEach of 'filters' is {\"property\", \"op\", \"value\", \"case_sensitive\"}, e.g. {\"property\": \"command_line\", \"op\": \"contains\", \"value\": \"powershell\"}, or a group: {\"or\": [...]}, {\"and\": [...]}, {\"not\": filter}, nested at most 5 deep and 50 filters in all. Ops: 'eq' (default), 'in' (value is a list), 'contains', 'starts_with', 'ends_with', 'exists', 'missing' (no value), 'gt', 'gte', 'lt', 'lte' (numbers or ISO-8601 datetimes). On an array property a filter holds when any element matches; on a node without the property it does not hold, so 'not' selects that node. Strings ignore case and, for 'eq' and 'in', surrounding whitespace, unless 'case_sensitive' is true.\n\nBesides declared properties, a filter may name the system fields every node and edge carries: 'created_at' and 'updated_at' (datetimes), 'created_by' and 'last_updated_by' (who wrote it, e.g. 'pipeline:job=7;event=...' or 'api:alice') and 'update_count' (writes so far). 'sort_by' one of 'updated_at', 'created_at' or 'update_count' ('sort_order' 'desc' by default) orders by it instead of by id -- 'what changed recently' is sort_by 'updated_at'.\n\n'search_term' is a case-insensitive substring matched against every property the 'labels' declare. 'warnings' reports filters on properties the labels do not declare, and labels the ontology does not declare.\n\nWith 'detail' 'keys' (the default) each node is its 'label' and 'key' -- its key properties, which is how the neighbors endpoint names it. A node whose type declares no keys comes back as 'id', 'label' and 'properties' instead. 'full' returns 'id', 'label', every property and 'meta' -- the five system fields. 'select_properties' returns the key plus only the properties named, under 'properties'.\n\nPass 'ids' to fetch known nodes directly; the other filters and 'detail' are then ignored. Results are paged with 'limit' and 'offset' and carry the total ignoring both.",
     "operationId": "v2_search_nodes",
     "parameters": [
      {
@@ -14500,120 +16418,6 @@
        "description": "Graph id or name. An id match takes precedence over a name.",
        "title": "Graph Ref",
        "type": "string"
-      }
-     },
-     {
-      "description": "Exact ontology label to match",
-      "in": "query",
-      "name": "label",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "description": "Exact ontology label to match",
-       "title": "Label"
-      }
-     },
-     {
-      "description": "Also match types whose is_a chain reaches 'label'",
-      "in": "query",
-      "name": "include_subtypes",
-      "required": false,
-      "schema": {
-       "default": false,
-       "description": "Also match types whose is_a chain reaches 'label'",
-       "title": "Include Subtypes",
-       "type": "boolean"
-      }
-     },
-     {
-      "description": "Property equality filters as a JSON object, e.g. {\"ip\": \"10.0.0.5\"}",
-      "in": "query",
-      "name": "properties",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "description": "Property equality filters as a JSON object, e.g. {\"ip\": \"10.0.0.5\"}",
-       "title": "Properties"
-      }
-     },
-     {
-      "description": "Case-insensitive substring matched against the key properties of the searched type, or of every node type when 'label' is not given",
-      "in": "query",
-      "name": "contains",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "description": "Case-insensitive substring matched against the key properties of the searched type, or of every node type when 'label' is not given",
-       "title": "Contains"
-      }
-     },
-     {
-      "description": "Fetch these node ids directly, ignoring the other filters",
-      "in": "query",
-      "name": "ids",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "items": {
-          "type": "string"
-         },
-         "type": "array"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "description": "Fetch these node ids directly, ignoring the other filters",
-       "title": "Ids"
-      }
-     },
-     {
-      "description": "Maximum number of nodes to return, 1 to 200.",
-      "in": "query",
-      "name": "limit",
-      "required": false,
-      "schema": {
-       "default": 50,
-       "description": "Maximum number of nodes to return, 1 to 200.",
-       "maximum": 200,
-       "minimum": 1,
-       "title": "Limit",
-       "type": "integer"
-      }
-     },
-     {
-      "description": "Number of matching nodes to skip, for paging.",
-      "in": "query",
-      "name": "offset",
-      "required": false,
-      "schema": {
-       "default": 0,
-       "description": "Number of matching nodes to skip, for paging.",
-       "minimum": 0,
-       "title": "Offset",
-       "type": "integer"
       }
      },
      {
@@ -14635,6 +16439,16 @@
       }
      }
     ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GraphNodeSearchRequest"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
      "200": {
       "content": {
@@ -14668,7 +16482,7 @@
   },
   "/api/v2/graph/{graph_ref}/data/overview": {
    "get": {
-    "description": "Row counts per node label and per edge label, plus the declared types that hold no rows at all. The cheapest way to find out whether a graph has been populated and with what.\n\nAlso reports 'query_dialect' -- 'cypher' or 'googlesql' -- which is the language the query endpoint expects for this graph, since that follows from the backing integration rather than from the request.",
+    "description": "Row counts per node label and per edge label, plus the declared types that hold no rows at all. The cheapest way to find out whether a graph has been populated and with what.\n\nIt is also the map of the graph: every populated node label comes with its 'key_properties' (what to search on) and 'is_a', and every populated edge label with the node labels it joins ('endpoints', \"from -> to\", inherited from its nearest is_a ancestor when it declares none; empty means unconstrained). Endpoint filters are not listed here; read them from the ontology.\n\nAlso reports 'query_dialect' -- 'cypher' or 'googlesql' -- which is the language the query endpoint expects for this graph, since that follows from the backing integration rather than from the request.",
     "operationId": "v2_overview",
     "parameters": [
      {
@@ -14732,9 +16546,85 @@
     ]
    }
   },
+  "/api/v2/graph/{graph_ref}/data/paths": {
+   "post": {
+    "description": "Every shortest path between 'from_node' and 'to_node', following edges in either direction, up to 'max_depth' hops (at most 5) and at most 10 paths. Name each node by 'label' and 'key', or by 'id'. Only the shortest paths come back: restrict 'edge_labels' to see a longer route.\n\nInstead of 'to_node', send 'to_labels' and 'to_filters' (the node search grammar) to reach the nearest nodes they match, e.g. the closest admin account to a host. 'via_labels' keeps every node in between to those labels or their subtypes.\n\nEach path lists its 'nodes' by label and key and its 'edges' as label and 'direction', 'outgoing' when the edge points along the path; edges[i] joins nodes[i] and nodes[i+1]. Empty 'paths' means no connection within 'max_depth'. 'truncated' means the search was cut on a very connected neighbourhood, so a path may exist that was not found.",
+    "operationId": "v2_paths",
+    "parameters": [
+     {
+      "description": "Graph id or name. An id match takes precedence over a name.",
+      "in": "path",
+      "name": "graph_ref",
+      "required": true,
+      "schema": {
+       "description": "Graph id or name. An id match takes precedence over a name.",
+       "title": "Graph Ref",
+       "type": "string"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GraphPathsRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GraphPathsResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Find how two nodes are connected",
+    "tags": [
+     "Management/Graph"
+    ],
+    "x-arcanna-scopes": [
+     "read:graph_data"
+    ]
+   }
+  },
   "/api/v2/graph/{graph_ref}/data/query": {
    "post": {
-    "description": "Runs a statement in the backing store's own language -- Cypher for Neo4j, GoogleSQL for Spanner Graph. Call the overview endpoint to learn which one this graph expects. Object names follow 'arcanna_<graph_name>_node' and 'arcanna_<graph_name>_edge'.\n\nWrites are impossible: Neo4j runs the statement in a read-access session and Spanner in a read-only snapshot, both of which reject DML and DDL at the database. Results are capped and the statement is given a deadline.\n\nThe statement is NOT restricted to this graph's objects. Any graph sharing the same database is readable through it, so grant 'read:graph_data' accordingly.",
+    "description": "Runs a statement in the backing store's own language -- Cypher for Neo4j, GoogleSQL for Spanner Graph. Call the overview endpoint to learn which one this graph expects.\n\nOne database holds every graph, so every node pattern must carry '$node' and every relationship '$edge' -- Cypher: 'MATCH (n:$node)-[r:$edge]->(m:$node)'; GoogleSQL: 'GRAPH $graph MATCH (n:$node)-[r:$edge]->(m:$node)'. They are replaced with this graph's own objects. A statement naming no object of this graph, or one belonging to another graph, is refused. The ontology label is the 'label' property of a row: filter with 'WHERE n.label = $label'. Bind values through 'params'.\n\nWrites are impossible: Neo4j runs the statement in a read-access session and Spanner in a read-only snapshot, both of which reject DML and DDL at the database. Results are capped and the statement is given a deadline.",
     "operationId": "v2_query",
     "parameters": [
      {
@@ -14810,7 +16700,7 @@
   },
   "/api/v2/graph/{graph_ref}/mutations": {
    "post": {
-    "description": "Applies a batch of node and edge changes to one graph. The graph is addressed by id or by name; percent-encode a name that needs it. At most 1000 items per request.\n\nIds are derived from each type's key properties rather than supplied, so the same entity sent by two pipelines converges on one node. Upserts merge: properties a request does not mention survive, and an explicit null removes one.\n\nEach result names its entity by 'label' and 'key', and an edge result names both endpoints. Send 'verbose': true for the derived ids, the ontology flags and the row as stored, merged properties included. A write lands for a whole step or not at all, so a store failure is reported once on 'request' as status NOK, and its items are missing from 'applied'.\n\nThe batch is validated before anything is written: 'strict' rejects the whole request on a single violation, while 'lenient' writes non-conforming entities and flags them with 'label_outside_schema' and 'ext_property_keys'. Casing and reserved property names are refused in every mode.\n\nEntities of a type declaring 'is_a' are stored with their resolved supertype chain. Application is not atomic across items, but retrying a whole batch is safe because ids are derived.",
+    "description": "Applies a batch of node and edge changes to one graph. The graph is addressed by id or by name; percent-encode a name that needs it. At most 1000 items per request.\n\nIds are derived from each type's key properties rather than supplied, so the same entity sent by two pipelines converges on one node. Upserts merge: properties a request does not mention survive, and an explicit null removes one.\n\nA node upsert must carry at least one key property of its label. A subset of the keys is enough when exactly one stored node agrees with it: that node is updated and gains any key the request sends that it lacked. A subset agreeing with several stored nodes is rejected -- send more keys. Edge endpoints are resolved the same way.\n\nEach result names its entity by 'label' and 'key', and an edge result names both endpoints. Send 'verbose': true for the derived ids, the ontology flags and the row as stored, merged properties included. A write lands for a whole step or not at all, so a store failure is reported once on 'request' as status NOK, and its items are missing from 'applied'.\n\nThe batch is validated before anything is written: 'strict' rejects the whole request on a single violation, while 'lenient' writes non-conforming entities and flags them with 'label_outside_schema' and 'ext_property_keys'. Casing and reserved property names are refused in every mode.\n\nEntities of a type declaring 'is_a' are stored with their resolved supertype chain. Application is not atomic across items, but retrying a whole batch is safe because ids are derived.",
     "operationId": "v2_mutate",
     "parameters": [
      {
@@ -14892,7 +16782,7 @@
   },
   "/api/v2/graph/{graph_ref}/ontology": {
    "get": {
-    "description": "Searches the ontology of one graph, addressed by id or by name. This is a search rather than a dump: a graph may declare hundreds of types, so the response is one page of the best matches. 'node_type_count' and 'edge_type_count' report the totals for the whole graph, 'total_count' the number matching the filters.\n\nNarrow with whichever is known. 'labels' fetches exact types. 'search' matches a case-insensitive term against type labels, property names, descriptions and uris, ranks label hits above property hits above description hits, and returns 'matched_on' for each result. 'connects_from' and 'connects_to' select the edge types that may join two node labels, honouring is_a substitutability, which is how you find the edge label to use for a relationship. 'kind' restricts to nodes or edges.\n\n'detail' decides how much of each match is returned: 'names' is a cheap catalogue of kind, label and supertype; 'lean' (the default) adds key properties, property types, the required set and endpoints, which is enough to build a valid mutation; 'full' adds the annotations and constraints -- description, uri, enum, pattern, bounds, defaults and the raw JSON schema. A large ontology is several times bigger at 'full', which is why it is opt-in.",
+    "description": "Searches the ontology of one graph, addressed by id or by name. This is a search rather than a dump: a graph may declare hundreds of types, so the response is one page of the best matches. 'total_count' is the number matching the filters.\n\nNarrow with whichever is known. 'labels' fetches exact types. 'search' matches a case-insensitive term against type labels, property names, descriptions and uris and ranks label hits above property hits above description hits. 'connects_from' and 'connects_to' select the edge types that may join two node labels, honouring is_a substitutability, which is how you find the edge label to use for a relationship. 'kind' restricts to nodes or edges.\n\n'detail' decides how much of each match is returned: 'names' is a cheap catalogue of kind, label and supertype; 'lean' (the default) adds key properties, property types, the required set and endpoints, which is enough to build a valid mutation; 'full' adds the annotations and constraints -- description, uri, enum, pattern, bounds, defaults and the raw JSON schema. A large ontology is several times bigger at 'full', which is why it is opt-in. Empty fields are left out, except at 'raw', which is the stored declaration.",
     "operationId": "v2_ontology",
     "parameters": [
      {
@@ -14914,6 +16804,10 @@
       "schema": {
        "anyOf": [
         {
+         "enum": [
+          "node",
+          "edge"
+         ],
          "type": "string"
         },
         {
@@ -14946,7 +16840,7 @@
       }
      },
      {
-      "description": "Case-insensitive term matched against type labels, property names, descriptions and uris. Results are ranked best-first and each carries 'matched_on'.",
+      "description": "Case-insensitive term matched against type labels, property names, descriptions and uris. Results are ranked best-first.",
       "in": "query",
       "name": "search",
       "required": false,
@@ -14959,7 +16853,7 @@
          "type": "null"
         }
        ],
-       "description": "Case-insensitive term matched against type labels, property names, descriptions and uris. Results are ranked best-first and each carries 'matched_on'.",
+       "description": "Case-insensitive term matched against type labels, property names, descriptions and uris. Results are ranked best-first.",
        "title": "Search"
       }
      },
@@ -15090,7 +16984,7 @@
   },
   "/api/v2/graph/{graph_ref}/ontology/diagnostics": {
    "get": {
-    "description": "Reads back the conformance each node and edge recorded when it was written. Those fields -- 'label_outside_schema', 'ext_property_keys' and 'ontology_version' -- are reserved, so no property filter on the node search or query endpoints can reach them.\n\n'unused_types' are declared types holding no rows. 'undeclared_labels' are labels present in the data that nothing declares. 'undeclared_properties' are properties on rows of a DECLARED type that its declaration does not cover, plus declared properties whose values broke the declared type, enum, pattern or bounds -- read it as 'properties that do not honour the declaration'.\n\n'non_conformant' counts rows per type. 'missing_required' and 'property_violations' overlap, since one row can be both, so 'rows' reports the larger of the two rather than their sum: read it as a floor.\n\n'staleness' counts rows last checked against an older ontology version. They are unverified against the schema now in force, not necessarily wrong; the backfill endpoint re-checks them.\n\nCounting happens in the graph database: one aggregate scan per kind.",
+    "description": "Reads back the conformance each node and edge recorded when it was written. Those fields -- 'label_outside_schema', 'ext_property_keys' and 'ontology_version' -- are reserved, so no property filter on the node search or query endpoints can reach them.\n\n'unused_types' are declared types holding no rows. 'undeclared_labels' are labels present in the data that nothing declares. 'undeclared_properties' are properties on rows of a DECLARED type that its declaration does not cover, plus declared properties whose values broke the declared type, enum, pattern or bounds -- read it as 'properties that do not honour the declaration'.\n\n'non_conformant' counts rows per type. 'missing_required' counts rows flagged outside the schema: a required property missing, or an edge whose endpoints its type no longer allows (flagged by the backfill). It and 'property_violations' overlap, since one row can be both, so 'rows' reports the larger of the two rather than their sum: read it as a floor.\n\n'staleness' counts rows last checked against an older ontology version. They are unverified against the schema now in force, not necessarily wrong; a backfill ('backfill_enabled' on the settings endpoint) re-checks them.\n\nCounting happens in the graph database: one aggregate scan per kind.",
     "operationId": "v2_ontology_diagnostics",
     "parameters": [
      {
@@ -15375,7 +17269,7 @@
   },
   "/api/v2/graph/{graph_ref}/ontology/types": {
    "post": {
-    "description": "Changes what a graph. Only the types named in 'types.upsert' and 'types.delete' are touched.\n\nAn upsert is addressed by (kind, label) and carries only the fields being set. It merges into the type of that kind and label, or creates it when there is none. An omitted field stays as stored; a field sent as null is cleared. A type being created merges over nothing, so it must be a complete declaration.\n\nWithin 'json_schema', 'properties' merges by name and a property mapped to null is removed, while 'required' is replaced whole, being a set. 'key_properties' and 'endpoints' are likewise replaced whole when present.\n\nA type may be named only once across both lists.\n\nThe ontology is validated as a whole, so an edge type and the node types its endpoints name must be declared together, as must a subtype and its supertype. A rejected batch leaves the ontology untouched.\n\nDeleting a type that still holds rows is refused with 409: those rows would be left with nothing to validate against. Changing a type's key properties, or the declared type of one, while it holds rows is refused the same way -- that would fork every existing id.\n\nA change bumps 'ontology_version', records a version in the history, and schedules a backfill so existing rows are re-checked.",
+    "description": "Changes the types a graph declares. The body is {\"upsert\": [...], \"delete\": [...]}; only the types named there are touched.\n\nAn upsert is addressed by (kind, label) and carries only the fields being set. It merges into the type of that kind and label, or creates it when there is none. An omitted field stays as stored; a field sent as null is cleared. A type being created merges over nothing, so it must be a complete declaration.\n\nWithin 'json_schema', 'properties' merges by name and a property mapped to null is removed, while 'required' is replaced whole, being a set. 'key_properties' and 'endpoints' are likewise replaced whole when present. A property 'default' fills rows that omit it, and is refused on key properties.\n\nAn endpoint pair {\"from\", \"to\"} may add 'from_filters' / 'to_filters', in the search filter grammar, that the source / target node must satisfy, e.g. {\"from\": \"file\", \"to\": \"organization\", \"to_filters\": [{\"property\": \"name\", \"value\": \"Mandiant\"}]}. They may only read key properties shared by the endpoint label and its writable subtypes. An edge subtype declaring no endpoints inherits its supertype's; one declaring its own may only narrow them, and an edge must satisfy every level of its is_a chain that declares endpoints. Enforced on writes; edges already stored are re-checked by the backfill and flagged outside the schema.\n\nA type may be named only once across both lists.\n\nThe ontology is validated as a whole, so an edge type and the node types its endpoints name must be declared together, as must a subtype and its supertype. A rejected batch leaves the ontology untouched.\n\nDeleting a type that still holds rows is refused with 409: those rows would be left with nothing to validate against. Dropping a key property, or changing the declared type of one, while the type holds rows is refused the same way -- that would fork every existing id. Adding a key is allowed.\n\nA change bumps 'ontology_version', records a version in the history, and schedules a backfill so existing rows are re-checked.\n\nWith 'dry_run' nothing is written: the response reports the 'changes' the batch would make, 'findings' ('error' blocks a save, 'warning' does not), 'blocked' changes the data refuses, 'deletes_with_rows', and whether it is 'applicable'.",
     "operationId": "v2_edit_ontology",
     "parameters": [
      {
@@ -15387,6 +17281,18 @@
        "description": "Graph id or name. An id match takes precedence over a name.",
        "title": "Graph Ref",
        "type": "string"
+      }
+     },
+     {
+      "description": "Report what the batch would do and write nothing",
+      "in": "query",
+      "name": "dry_run",
+      "required": false,
+      "schema": {
+       "default": false,
+       "description": "Report what the batch would do and write nothing",
+       "title": "Dry Run",
+       "type": "boolean"
       }
      },
      {
@@ -15423,7 +17329,15 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/GraphEntry"
+         "anyOf": [
+          {
+           "$ref": "#/components/schemas/GraphEntry"
+          },
+          {
+           "$ref": "#/components/schemas/GraphOntologyPreviewResponse"
+          }
+         ],
+         "title": "Response V2 Edit Ontology"
         }
        }
       },
@@ -15451,7 +17365,7 @@
   },
   "/api/v2/graph/{graph_ref}/settings": {
    "post": {
-    "description": "Sets the settings a graph carries outside its ontology. Send only the fields you are changing; a request naming neither is rejected.\n\n'enforcement' decides what happens to a node or edge the ontology does not allow: 'strict' rejects the whole request, 'lenient' writes it and flags it with label_outside_schema and ext_property_keys. Ids are derived from the ontology in every mode, so switching never forks a graph, and rows written under the previous mode are left as recorded.\n\n'backfill_enabled' schedules the re-check of rows left on an older ontology version and returns immediately. A backfill rewrites those rows in batches -- 'ext_property_keys', 'label_ancestors' and 'label_outside_schema' recomputed, 'ontology_version' re-stamped, properties untouched. An ontology update or revert starts one on its own, so setting this is for re-running an interrupted backfill; false stops one that is running. It clears itself once no stale rows are left.",
+    "description": "Sets the settings a graph carries outside its ontology. Send only the fields you are changing; a request naming none of them is rejected.\n\n'description' states what the graph is for, usually followed by the questions the schema exists to answer. It replaces the stored text whole; an empty string clears it.\n\n'enforcement' decides what happens to a node or edge the ontology does not allow: 'strict' rejects the whole request, 'lenient' writes it and flags it with label_outside_schema and ext_property_keys. Ids are derived from the ontology in every mode, so switching never forks a graph, and rows written under the previous mode are left as recorded.\n\n'backfill_enabled' schedules the re-check of rows left on an older ontology version and returns immediately. A backfill rewrites those rows in batches -- 'ext_property_keys', 'label_ancestors' and 'label_outside_schema' recomputed, 'ontology_version' re-stamped, properties untouched. An ontology update or revert starts one on its own, so setting this is for re-running an interrupted backfill; false stops one that is running. It clears itself once no stale rows are left.",
     "operationId": "v2_update_settings",
     "parameters": [
      {
@@ -15516,7 +17430,7 @@
       "description": "Validation Error"
      }
     },
-    "summary": "Change a graph's enforcement mode, or schedule a backfill",
+    "summary": "Change a graph's description or enforcement mode, or schedule a backfill",
     "tags": [
      "Management/Graph"
     ],
@@ -16391,6 +18305,80 @@
     ],
     "x-arcanna-scopes": [
      "execute:job_operations"
+    ]
+   }
+  },
+  "/api/v2/jobs/{job_id}/training-config-validation/configurations": {
+   "post": {
+    "operationId": "v2_build_training_config_validation_configurations",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "description": "Numeric id of the job",
+       "title": "Job Id",
+       "type": "integer"
+      }
+     },
+     {
+      "description": "Arcanna API key",
+      "in": "header",
+      "name": "X-Arcanna-Api-Key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Arcanna API key",
+       "title": "X-Arcanna-Api-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TrainingConfigValidationConfigurationsRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TrainingConfigValidationConfigurationsResponse"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Build Training Config Validation Configurations",
+    "tags": [
+     "Management/Training Config Validation"
+    ],
+    "x-arcanna-scopes": [
+     "read:job_metrics"
     ]
    }
   },
